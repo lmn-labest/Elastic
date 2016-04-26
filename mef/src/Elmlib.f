@@ -49,7 +49,11 @@ c ......................................................................
       return
 c ......................................................................            
   200 continue
-      goto 10
+      if (ilib .eq. 1) then  
+c     Elemento triagunlo 3 nos (mec-elastico - estado plano de
+c     deformacao)
+        call elmt02_mec(e,iq,x,u,p,s,txn,ndm,nst,nel,isw)
+      endif   
       return
 c ......................................................................
   300 continue
@@ -58,13 +62,18 @@ c ......................................................................
 c ......................................................................
   400 continue
       if (ilib .eq. 1) then  
-c     Elemento quadrilatero de 4 nos (mec-elastico)
+c     Elemento quadrilatero de 4 nos (mec-elastico - estado plano de
+c     deformacao)
         call elmt04_mec(e,iq,x,u,p,s,txn,ndm,nst,nel,isw)
       endif   
       return
 c ......................................................................
   500 continue
-      goto 10
+      if (ilib .eq. 1) then  
+c     Elemento quadrilatero de 4 nos (mec-elastico - estado plano de 
+c     tensao)
+        call elmt05_mec(e,iq,x,u,p,s,txn,ndm,nst,nel,isw)
+      endif   
       return
 c ......................................................................
   600 continue
@@ -103,7 +112,6 @@ c     Elemento tetraedro de 10 nos (mec-elastico)
         call elmt12_mec(e,iq,x,u,p,s,txn,ndm,nst,nel,isw)
       endif
       return       
-c ......................................................................
 c ......................................................................
  1300 continue
       if (ilib .eq. 1) then  
@@ -2458,14 +2466,14 @@ c * ------------------------------------------------------------------ *
 c * STRESS2D: calcula tensoes 2D                                       *
 c * ------------------------------------------------------------------ *      
 c * Parametros de entrada:                                             *
-c * ------------------------------------------------------------------ *                                                                  *
+c * ------------------------------------------------------------------ * 
 c * d11,d12,d22,d33 - coeficientes da matriz constitutiva              *
 c * ps     - coeficiente de Poisson                                    *
 c * ept    - estado plano de deformacai                                *
 c * eps(3) - deformacoes                                               *
 c * ------------------------------------------------------------------ * 
-c * Parametros de saida:                                               *                                                                    *
-c * ------------------------------------------------------------------ *                                              *
+c * Parametros de saida:                                               * 
+c * ------------------------------------------------------------------ * 
 c * t(1) - sigmaxx                                                     *
 c * t(2) - sigmayy                                                     *
 c * t(3) - sigmazz                                                     *
@@ -2547,9 +2555,9 @@ c * ------------------------------------------------------------------ *
 c **********************************************************************
       implicit none
       logical afl
-	integer nel,ndm
+      integer nel,ndm
       real*8  x(ndm,*),hx(*),hy(*),hz(*),xj(3,3),det,deti,ZERO
-	parameter (ZERO = 1.d-14)
+      parameter (ZERO = 1.d-14)
 c ......................................................................
 
 c ... Matriz Jacobiana:
@@ -2610,21 +2618,21 @@ c *                                                                    *
 c **********************************************************************
       implicit none
       logical afl
-	integer nel
+      integer nel
       real*8  x(3,*),hx(*),hy(*),hz(*),xj(3,3),det,deti,ZERO
-	parameter (ZERO = 1.d-14)
+      parameter (ZERO = 1.d-14)
 c ......................................................................
 
 c ... Matriz Jacobiana:
 
       xj(1,1) = x(1,1)-x(1,4)
       xj(1,2) = x(2,1)-x(2,4)
-	xj(1,3) = x(3,1)-x(3,4)
+      xj(1,3) = x(3,1)-x(3,4)
       xj(2,1) = x(1,2)-x(1,4)
-	xj(2,2) = x(2,2)-x(2,4)
+      xj(2,2) = x(2,2)-x(2,4)
       xj(2,3) = x(3,2)-x(3,4)
       xj(3,1) = x(1,3)-x(1,4)
-	xj(3,2) = x(2,3)-x(2,4)
+      xj(3,2) = x(2,3)-x(2,4)
       xj(3,3) = x(3,3)-x(3,4)
 
 c ... Determinante da matriz Jacobiana:  
@@ -2684,22 +2692,22 @@ c *     xji(3,3) - inversa da matriz jacobiana                         *
 c *                                                                    *
 c **********************************************************************
       implicit none
-	integer nel
+      integer nel
       real*8  xj(3,3),xji(3,3),x(3,*),det
-	real*8  ZERO
-	parameter (ZERO = 1.d-14)
+      real*8  ZERO
+      parameter (ZERO = 1.d-14)
 c ......................................................................
 c
 c ... Matriz Jacobiana:
 
       xj(1,1) = x(1,1)-x(1,4)
       xj(1,2) = x(2,1)-x(2,4)
-	xj(1,3) = x(3,1)-x(3,4)
+      xj(1,3) = x(3,1)-x(3,4)
       xj(2,1) = x(1,2)-x(1,4)
-	xj(2,2) = x(2,2)-x(2,4)
+      xj(2,2) = x(2,2)-x(2,4)
       xj(2,3) = x(3,2)-x(3,4)
       xj(3,1) = x(1,3)-x(1,4)
- 	xj(3,2) = x(2,3)-x(2,4)
+      xj(3,2) = x(2,3)-x(2,4)
       xj(3,3) = x(3,3)-x(3,4)
 c
 c ... Determinante da matriz Jacobiana:  
@@ -2713,7 +2721,7 @@ c ......................................................................
         stop
       endif
 c ......................................................................
-	
+c
 c ..  Inversa da matriz Jacobiana:
 
       xji(1,1) = (xj(2,2)*xj(3,3)-xj(2,3)*xj(3,2))/det
@@ -2809,14 +2817,14 @@ c **********************************************************************
 c ... v1 - no1 - no5
       d(1,1) = x(1,1)-x(1,5)
       d(1,2) = x(2,1)-x(2,5)
-	d(1,3) = x(3,1)-x(3,5)
+      d(1,3) = x(3,1)-x(3,5)
 c ... v2 - no6 - no5     
       d(2,1) = x(1,6)-x(1,5)
-	d(2,2) = x(2,6)-x(2,5)
+      d(2,2) = x(2,6)-x(2,5)
       d(2,3) = x(3,6)-x(3,5)
 c ... v3 - no8 - no5        
       d(3,1) = x(1,8)-x(1,5)
-	d(3,2) = x(2,8)-x(2,5)
+      d(3,2) = x(2,8)-x(2,5)
       d(3,3) = x(3,8)-x(3,5)
 c
 c ... Determinante:  
@@ -2857,12 +2865,12 @@ c **********************************************************************
 c ... 
       d(1,1) = x(1,1)-x(1,4)
       d(1,2) = x(2,1)-x(2,4)
-	d(1,3) = x(3,1)-x(3,4)
+      d(1,3) = x(3,1)-x(3,4)
       d(2,1) = x(1,2)-x(1,4)
-	d(2,2) = x(2,2)-x(2,4)
+      d(2,2) = x(2,2)-x(2,4)
       d(2,3) = x(3,2)-x(3,4)
       d(3,1) = x(1,3)-x(1,4)
-	d(3,2) = x(2,3)-x(2,4)
+      d(3,2) = x(2,3)-x(2,4)
       d(3,3) = x(3,3)-x(3,4)
 c
 c ... Determinante da matriz Jacobiana:  

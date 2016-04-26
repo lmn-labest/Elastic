@@ -974,7 +974,12 @@ c *********************************************************************
       integer carga(*),tipo_face(*)
       integer eload(maxface+1,*),face(max_no_face,*)
       integer el(maxno+1,*),ie(*)
-      integer quad_side(2,4),tetra_face(3,4),hexa_face(4,6)
+      integer tria_side(2,3),quad_side(2,4)
+      integer tetra_face(3,4),hexa_face(4,6)
+c 
+      data tria_side / 1, 2
+     .               , 2, 3
+     .               , 3, 1/
 c 
       data quad_side / 1, 2
      .               , 2, 3
@@ -1001,11 +1006,24 @@ c ...
       do i = 1, numel
         ty = ie(el(maxno+1,i))
 c ... triangulo
-        if( ty .eq. 3 ) then
+        if( ty .eq. 2 .or. ty .eq. 3 ) then
+c ... verifica se ha carga nas faces do elemento
+          do j = 1, 3
+            c = eload(j,i)
+            if( c .ne. 0) then
+              line_face         = line_face + 1
+              nface             = nface + 1
+              do k = 1, 2
+                face(k,nface) = el(tria_side(k,j),i)
+              enddo
+              carga(nface)      = c
+              tipo_face(nface)  = 1
+            endif
+          enddo
 c ....................................................................
 c
 c ... quadrilatero
-        else if(ty .eq. 4 ) then
+        else if(ty .eq. 4 .or. ty .eq. 5 ) then
 c ... verifica se ha carga nas faces do elemento
           do j = 1, 4
             c = eload(j,i)
@@ -1022,7 +1040,7 @@ c ... verifica se ha carga nas faces do elemento
 c ....................................................................
 c
 c ... Tetraedro
-        else if( ty .eq. 6 ) then
+        else if( ty .eq. 6  .or. ty .eq. 12) then
 c ... verifica se ha carga nas faces do elemento
           do j = 1, 4
             c = eload(j,i)
@@ -1039,7 +1057,7 @@ c ... verifica se ha carga nas faces do elemento
 c ....................................................................
 c 
 c ...  hexaedros      
-        else if(ty .eq. 7) then
+        else if(ty .eq. 7 .or. ty .eq. 13) then
 c ... verifica se ha carga nas faces do elemento
           do j = 1, 6
             c = eload(j,i)

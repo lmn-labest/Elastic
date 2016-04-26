@@ -190,10 +190,38 @@ c
 c ... Conetividades tria3:          
 c
   500 continue
+      print*,'load tria3 ...'
+      f_read_el = .true.
       ntria3(1) = 0
+      nenv      = 3
+      nst       = nenv*ndf
       call elconn(ia(i_ix),nen+1,3,ntria3(1),numel,nin)
       ntria3(2) = totnel+1
       totnel    = totnel + ntria3(1)
+c ... transforma os elementos lineares em quadraticos (3 nos)
+c     if( nen .eq. 3) then
+c     endif
+c ...                                                                   
+c     Alocacao de arranjos na memoria:
+c     ---------------------------------------------------------------
+c     | id  nload | inum | e | x | f | u | tx0 |
+c     ---------------------------------------------------------------
+      if (ndf .gt. 0) then
+        i_inum  = alloc_4('inum    ',    1,nnode)  
+        i_id    = alloc_4('id      ',  ndf,nnode)
+        i_nload = alloc_4('nload   ',  ndf,nnode)
+        i_f     = alloc_8('f       ',  ndf,nnode)
+        i_u     = alloc_8('u       ',  ndf,nnode)
+        i_tx0   = alloc_8('tx0     ',  ntn,nnode)
+        call mzero(ia(i_inum) ,nnode)  
+        call mzero(ia(i_id)   ,nnode*ndf)
+        call mzero(ia(i_nload),nnode*ndf)
+        call azero(ia(i_f)    ,nnode*ndf)
+        call azero(ia(i_u)    ,nnode*ndf)
+        call azero(ia(i_tx0)  ,nnode*ntn)
+      endif
+c .....................................................................
+      print*,'load.'
       go to 100
 c ......................................................................      
 c

@@ -520,7 +520,7 @@ c * neq_doti - numero de equacoes no produto interno (MPI)             *
 c * i_fmapi  - ponteiro para o mapa de comunicacao  (MPI)              *
 c * i_xfi    - ponteiro para o buffer de valores    (MPI)              *
 c * i_rcvsi  - ponteiro extrutura da comunicacao    (MPI)              *
-c * i_dspli  - ponteiro extrutura da comunicacao    (MPI)              *                                                       *
+c * i_dspli  - ponteiro extrutura da comunicacao    (MPI)              *                             
 c * flog     - log do arquivo de saida                                 *
 c * ------------------------------------------------------------------ * 
 c * Parametros de saida:                                               *
