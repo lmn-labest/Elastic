@@ -1,0 +1,22 @@
+      real*8    omp_dot
+      integer*8 i_threads_y
+      logical omp_elmt,omp_solv
+      integer max_num_threads,nth_elmt,nth_solv,
+     .        thread_id,thread_height,
+     .        thread_begin,thread_end,
+     .        thread_pu_begin,thread_pu_end,
+     .        thread_pm_begin,thread_pm_end,
+     .        max_num_threads_available
+      parameter (max_num_threads = 256)
+      common /omp_shared_buffer/ i_threads_y, 
+     .             thread_begin(max_num_threads),
+     .             thread_end(max_num_threads),
+     .             thread_pu_begin(max_num_threads),
+     .             thread_pu_end(max_num_threads),
+     .             thread_pm_begin(max_num_threads),
+     .             thread_pm_end(max_num_threads),
+     .             thread_height(max_num_threads)
+      common /omp_control/  omp_elmt,omp_solv,nth_elmt,nth_solv
+      common /omp_dot    / omp_dot
+      common /omp_private/ thread_id
+c$omp threadprivate(/omp_private/)

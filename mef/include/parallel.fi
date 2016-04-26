@@ -1,0 +1,97 @@
+c **********************************************************************
+c *                                                                    *
+c *    Variaveis da paralelizacao MPI                                  *
+c *                                                                    *
+c *      nno1      - numero de nos em V1                               *
+c *      nno2      - numero de nos em V2                               *
+c *      nno3      - numero de nos em V3                               *
+c *      nno4      - numero de nos em V4                               *
+c *      nno1a     - numero de nos em V1a                              *
+c *      nnof1     - numero de nos com comunicacao buffer de rec       *
+c *      nnof2     - numero de nos com comunicacao buffer de envio     *
+c *      nnofi     - numero de nos com comunicacao                     *
+c *      nnoG      - numero total de nos (da malha completa)           *
+c *      numel_nov - numero de elementos novlp                         *
+c *      numel_ov  - numero de elementos ovlp                          *
+c *      neq1      - numero de eqs em V1                               *
+c *      neq2      - numero de eqs em V2                               *
+c *      neq3      - numero de eqs em V3                               *
+c *      neq4      - numero de eqs em V4                               *
+c *      neq1a     - numero de eqs em V1a                              *
+c *      neqf1     - numero de eqs buffer de recbimentos               *
+c *      neqf2     - numero de eqs buffer de envio                     *
+c *      nprcs     - numero de processos                               *
+c *      my_id     - rank do processo                                  *
+c *      i_noLG    - ponteiro para o arranjo noLG(nnode)               *
+c *      i_noGL    - ponteiro para o arranjo noGL(nnoG)                *
+c *      i_elLG    - ponteiro para o arranjo elLG(numel)               *
+c *      i_idG     - ponteiro para o arranjo idG(ndf,nnoG)             *
+c *      i_fmap    - ponteiro para o arranjo fmap(neqf)                *
+c *      i_fmap0   - ponteiro para o arranjo fmap0(nnof)               *
+c *      i_rcvs    - ponteiro para o arranjo rcvs(nprcs)               *
+c *      i_dspl    - ponteiro para o arranjo dspl(nprcs)               *
+c *      ovlp      - flag para o metodo utilizado, ovlp ou novlp       *
+c *      nno_pload - numero de nos com forcas externas                 *
+c *      neq_dot   - numero de eqs no produto interno                  *
+c *      nad1      -  numero de coeficientes da matriz overlaing       *
+c *                                                                    *
+c **********************************************************************
+c ... nos
+      integer nno1,nno2,nno3,nno4,nno1a,nnof1,nnof2,nnoG,nno_pload
+      integer nnofi
+c .....................................................................      
+c
+c ... elementos
+      integer numel_nov,numel_ov,nelG
+c .....................................................................      
+c
+c ... metodo de subdivisao de domineo
+      logical ovlp,novlp
+c .....................................................................      
+c
+c ... ponteiros      
+      integer*8 i_rcvs,i_dspl
+      integer*8 i_rreqs,i_sreqs
+      integer*8 i_rcvst,i_dsplt
+      integer*8 i_sizes,i_ranks
+      integer*8 i_fmap,i_xf
+      integer*8 i_fmapt,i_xft  
+      integer*8 i_fmap0i,i_rcvs0i,i_dspl0i
+      integer*8 i_fmap0,i_rcvs0,i_dspl0
+      integer*8 i_noLG,i_noGL
+      integer*8 i_elLG
+c .....................................................................      
+c
+c ... equacoes       
+      integer neq1,neq2,neq3,neq4,neq1a,neqf1,neqf2,neq32
+      integer neq1t,neq2t,neq3t,neq4t,neq1at,neqf1t,neqf2t,neq32t
+      integer neq_dot,neqt_dot
+c .....................................................................
+c
+c ... coeficeintes da matriz a
+      integer nad1t,nad1 
+c .....................................................................
+c
+      integer mdp,mcw,nprcs,ierr,nviz1,nviz2,min,my_id
+      logical mpi
+c ... variaveis comuns      
+      common /par_no/ nno1,nno2,nno3,nno4,nno1a,nnof1,nnof2,nnoG
+      common /par_el/ numel_ov,numel_nov,nelG,ovlp,novlp
+      common /par_com1/ nviz1,nviz2
+      common /par_com2/ my_id,nprcs,ierr,min,mdp,mcw,mpi
+      common /par_com3/ nnofi,nno_pload
+      common /par_com4/ i_fmap0i,i_rcvs0i,i_dspl0i,i_rreqs,i_sreqs,
+     .                  i_fmap0,i_rcvs0,i_dspl0,i_sizes,i_ranks,
+     .                  i_noLG,i_noGL,i_elLG
+c ----------------------------------------------------------------------
+c
+c     Variaveis do PRE-processador:
+c
+      character*15  macros(100)
+      common /par_pre1/  macros
+
+        
+      
+      
+      
+      

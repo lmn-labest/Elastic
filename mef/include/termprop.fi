@@ -1,0 +1,15 @@
+c **********************************************************************
+c *                                                                    *
+c *    prop = numero de propriedades que variam com a temperatura      *
+c *    nprop (i,j,k) - valor i da propriedade j do material tipo k     *
+c *    eprop (j,k) - numero de termos da propriedade j do material tipo*
+c *                 k                                                  *
+c *                                                                    *
+c **********************************************************************
+      integer prop, maxmate, npropterms,eprop
+      real*8 nprop
+      parameter (npropterms = 1000)
+      parameter (prop = 15)
+      parameter ( maxmate = 10)
+      common /termprop / nprop(npropterms,prop, maxmate),
+     .                  eprop(prop,maxmate)

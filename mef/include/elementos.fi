@@ -1,0 +1,17 @@
+      integer max_face,max_no_face
+      parameter (max_face   = 6,max_no_face = 4)
+c
+      integer type_barra2,type_tria3,type_quad4
+      integer type_tetra4,type_hexa8,type_prism6
+      parameter (type_barra2   = 1)
+      parameter (type_tria3    = 2)
+      parameter (type_quad4    = 3)
+      parameter (type_tetra4   = 4)
+      parameter (type_hexa8    = 5)
+      parameter (type_prism6   = 6)
+c
+      integer nbar2(4),ntria3(4),nquad4(4),ntetra4(4),nhexa8(4)
+     .       ,nprism6(4),ntetra10(4),nhexa20(4)
+      common /elementos/ nbar2  ,ntria3 ,nquad4,ntetra4,nhexa8
+     .                  ,nprism6,ntetra10,nhexa20
+

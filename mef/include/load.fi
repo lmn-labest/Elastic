@@ -1,0 +1,20 @@
+c*****************************Svn***************************************      
+c*$Date: 2011-03-03 11:09:50 -0300 (Thu, 03 Mar 2011) $                 
+c*$Rev: 908 $                                                           
+c*$Author: ana $                                                   
+c***********************************************************************    
+c **********************************************************************
+c *                                                                    *
+c *    nload(ndf,nnode) - numero da carga nodal                        *
+c *    load(2,numload)  - load(1,j) = tipo da carga j                  *
+c *                     - load(2,j) = numero de parcelas da carga j    *
+c *    fload(npar,nterms,numload) - definicao das cargas               *
+c *            fload(i,j,k) = parametro i da parcela j da carga k      *
+c *                                                                    *
+c **********************************************************************
+      integer load,numload,nterms,npar
+      real*8  fload
+      parameter (numload = 200)
+      parameter (nterms = 3)
+      parameter (npar = 1000)
+      common /load / load(2,numload),fload(npar,nterms,numload)
