@@ -1,0 +1,144 @@
+#!/bin/sh
+
+#make
+#------------------Variaveis Globais-----------------------
+PATH_MOD="src/"
+PATH_INCLUDE="include/"    
+PRENAME=elastic
+DEBUG=no
+FC=gfortran
+OPENMP=yes
+OT=O2
+#------------------gerando o nome do excutavel-------------
+ifeq ($(FC),ifort)
+  COMPILER_NAME=intel_${OT}
+endif
+
+ifeq ($(FC),gfortran)
+  COMPILER_NAME=gnu_${OT}
+endif
+  
+NAME+=$(PRENAME)_$(COMPILER_NAME)
+#-------------------Fontes---------------------------------
+src_mef = src/Assbly.f \
+src/Adjacency.f\
+src/Colormsh.f\
+src/Csr.f\
+src/Datastruct.f\
+src/Edges.f\
+src/Elmlib.f\
+src/Elmlib01.f\
+src/Elmlib02.f\
+src/Filenames.f\
+src/Gauss.f\
+src/Graph.f\
+src/Interpolation.f\
+src/Iters_omp.f\
+src/Iters.f\
+src/Jacobi.f\
+src/Main.f\
+src/Matvec.f\
+src/Matvec_omp.f\
+src/Matrix_partition.f\
+src/Numeq.f\
+src/Openmp.f\
+src/Paralelo.f\
+src/Pdata.f\
+src/Pform.f\
+src/Plasticity01.f\
+src/Pload.f\
+src/Predict.f\
+src/Precond.f\
+src/Reord.f\
+src/Solv.f\
+src/Write_log.f\
+src/Write_vtk.f\
+src/Vtk.f\
+src/Rdata.f
+
+
+mod_mef=src/Malloc.f
+#-------------------Flags necessarios--------------------------------
+NFLAGS=-I$(PATH_INCLUDE) -fno-range-check
+LDFLAGS=
+#--------------------compiladores------------------------------------
+# intel ifort
+ifeq ($(FC),ifort)
+  LDFLAGS += 
+  OFLAGS  += -module $(PATH_MOD)\
+               
+  ifeq ($(OPENMP),yes)
+    OFLAGS  += -openmp
+  endif
+endif
+# gnu gcc
+ifeq ($(FC),gfortran)
+  LDFLAGS +=    
+  OFLAGS  += -J$(PATH_MOD)
+  ifeq ($(OPENMP),yes)
+    OFLAGS  += -fopenmp
+  endif
+endif
+#--------------------------------------------------------------------
+#---------------------------Debug------------------------------------
+ifeq ($(DEBUG),yes)
+  OFLAGS += -g -fbacktrace  	
+else
+  OFLAGS += -${OT} 
+endif
+#--------------------------------------------------------------------
+FFLAGS= $(NFLAGS) $(OFLAGS) 
+
+.SUFFIXES: 
+.SUFFIXES: .for .f .h .fi .o
+mod_src  = $(mod_mef:%.f=%.o)
+objs_src= $(mod_src) $(src_mef:%.f=%.o)
+#mod_src  = $(patsubst:%.f,%.o,$(src_mod))
+#objs_src = $(patsubst %.f,%.o ,$(src_mef))
+
+FC=mpif77
+
+build:	$(mod_src)	$(objs_src)	
+	ls bin || mkdir -p bin
+	$(FC) $(FFLAGS) $(objs_src) -o bin/$(NAME) $(LDFLAGS)   
+
+tags:
+	ctags -R src/*.f include/*.fi
+
+.PHONY: cleantags
+cleantags:
+	@rm -fv tags
+	
+.PHONY: clean
+clean:  
+	@rm -fv src/*.o
+	@rm -fv src/*.mod
+	@rm -fv bin/$(NAME)
+
+.PHONY: cleanall
+cleanall:  
+	@rm -fv tags
+	@rm -fv src/*.o
+	@rm -fv src/*.mod
+	@rm -fv bin/$(NAME)
+
+.PHONY: cleanmod
+cleanmod:  
+	@rm -fv src/*.mod
+
+.PHONY: help
+help:
+	@echo "Autor :$(AUTHOR)                              "
+	@echo "Makefile para prepar para sitemas linux.      "
+	@echo -e "\E[7;32mOpcoes:\E[1;0m                      "
+	@echo "build         - compila o prepar              "
+	@echo "build_modules - gera os modulos               "
+	@echo "tags          - gera os tags                  "
+	@echo "cleantags     - limpa os tags                 "
+	@echo "clean         - limpa os obj, bin e mod       "
+	@echo "cleaall       - limpa tudo obj,bin,mod e tags "
+	@echo "cleanmod      - limpa os modulos              "
+
+# DO NOT DELETE
+
+# DO NOT DELETE
