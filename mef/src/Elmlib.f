@@ -50,14 +50,17 @@ c ......................................................................
 c ......................................................................            
   200 continue
       if (ilib .eq. 1) then  
-c     Elemento triagunlo 3 nos (mec-elastico - estado plano de
+c     Elemento triangunlar 3 nos (mec-elastico - estado plano de
 c     deformacao)
         call elmt02_mec(e,iq,x,u,p,s,txn,ndm,nst,nel,isw)
       endif   
       return
 c ......................................................................
   300 continue
-      goto 10
+      if (ilib .eq. 1) then  
+c     Elemento triangular 3 nos (mec-elastico - estado plano de tensao)
+        call elmt03_mec(e,iq,x,u,p,s,txn,ndm,nst,nel,isw)
+      endif   
       return
 c ......................................................................
   400 continue

@@ -82,7 +82,7 @@ c **********************************************************************
       implicit none
       include 'load.fi'
       integer ndm,nst,nel,isw
-      integer i,j,l1,l2,k1,k2,k,tp,tp1
+      integer i,j,l1,l2,k1,k2,k,tp
       integer nen
       integer iq(*)
 c ...
@@ -219,7 +219,7 @@ c ... Tensoes nodais :
 c
 c ......................................................................
   300 continue
-c ... tensao nodal | sxx syy szz sxy  0 0 0|
+c ... tensao nodal | sxx syy szz sxy|
       call deform2d(hx,hy,u,epsi,3)
       call stress2d_m(d11,d12,d22,d33,ps,.true.,epsi,p)
 c ...
@@ -313,12 +313,302 @@ c ......................................................................
   600 continue
 c ......................................................................
  1000 continue
-      print*, '*** Subrotina ELMT05_MEC: determinante nulo ou negativo 
+      print*, '*** Subrotina ELMT02_MEC: determinante nulo ou negativo 
      . do elemento ',nel,' na carga da aresta',j
       stop
  1100 continue
-      print*, '*** Subrotina ELMT01: determinante nulo ou negativo do el
-     .emento ',nel
+      print*, '*** Subrotina ELMT02_mec: determinante nulo ou negativo 
+     .do elemento ',nel
+      stop
+      end
+c **********************************************************************
+      subroutine elmt03_mec(e,iq,x,u,p,s,txn,ndm,nst,nel,isw)
+c **********************************************************************
+c * Data de criacao    : 27/04/2016                                    *
+c * Data de modificaco : 00/00/0000                                    * 
+c * ------------------------------------------------------------------ *
+c * ELMT03_MEC: Elemento triangulares de 3 nos para problemas          *  
+c * mecanico estaico-elasticos (Estado plano de tensao)                *
+c * ------------------------------------------------------------------ * 
+c * Parametros de entrada:                                             *
+c * ------------------------------------------------------------------ * 
+c * e(10) - constantes fisicas                                         *
+c *           e(1) = modulo de Young                                   *
+c *           e(2) = coeficiente de Poisson                            *
+c *           e(3) = espessura                                         *
+c *           e(4) =                                                   *
+c *           e(5) =                                                   *
+c *           e(6) =                                                   *
+c *           e(7) =                                                   *
+c * x(ndm,nem) - coordenadas nodais locais                             *
+c * u(nst)     - graus de liberade por elemento (u)                    *
+c * p(nst)     - nao definido                                          *
+c * s(nst,nst) - nao definido                                          *
+c * txn(4,nen) - tensoes nodais                                        *      
+c * ndm - dimensao                                                     *
+c * nst - numero de graus de liberdade por elemento (2*3)              *
+c * nel - numero do elemento                                           *
+c * isw - codigo de instrucao                                          *
+c *  1 =                                                               *
+c *  2 = matriz K e forcas internas Ku                                 *
+c *  3 = tensoes                                                       *
+c *  4 = forcas de volume e superficies                                *
+c *  5 =                                                               *
+c *  6 =                                                               *
+c *  7 =                                                               *
+c * ------------------------------------------------------------------ * 
+c * Parametros de saida:                                               *
+c * ------------------------------------------------------------------ * 
+c * e - constantes fisicas                                             *
+c * s - matriz de elemento                                             *
+c * p - isw = 2  residuo                                               *
+c *     isw = 3  tensao                                                *
+c *     isw = 4  cargas de superfice e volume                          *
+c * ------------------------------------------------------------------ * 
+c * OBS:                                                               *
+c * ------------------------------------------------------------------ * 
+c **********************************************************************
+      implicit none
+      include 'load.fi'
+      integer ndm,nst,nel,isw
+      integer i,j,l1,l2,k1,k2,k,tp,tp1
+      integer nen
+      integer iq(*)
+c ...
+      real*8 face_f(2),ddum
+c ...
+      real*8 u(*)
+      real*8 p(*),s(nst,*)
+c ... funcoes de interpolacao
+      real*8 h(3),hx(3),hy(3)
+c ...
+      real*8 xj(2,2),xji(2,2)
+      real*8 wt1,det
+      real*8 epsi(4),txn(4,*)
+c ... matriz jacobiana
+      real*8 xj11,xj12,xj21,xj22
+      real*8 xji11,xji12,xji21,xji22
+c ...
+      real*8 e(*),x(ndm,*),xf(2,2)
+c ...
+      real*8 a,b,c,ym,ps,thic
+      real*8 a1,a2,d11,d12,d22,d33
+c ... 
+      integer tria_side_node3(2,3),no
+c ...
+      data tria_side_node3 / 1, 2
+     .                     , 2, 3
+     .                     , 3, 1/
+c ... 
+      data nen/3/
+c ......................................................................
+      goto (100,200,200,400,500) isw
+c ======================================================================
+c
+c ...                                          
+  100 continue
+c ...
+c .....................................................................
+      return
+c ======================================================================
+c
+c ... Matriz de rigidez:
+c
+c ......................................................................
+  200 continue
+c
+c     Matriz Jacobiana:
+c
+      xj11 = x(1,1)-x(1,3)
+      xj12 = x(2,1)-x(2,3)
+      xj21 = x(1,2)-x(1,3)
+      xj22 = x(2,2)-x(2,3)
+      det  = xj11*xj22-xj12*xj21
+      if (det .le. 0.d0) go to 1100
+c
+c	Inversa da matriz Jacobiana:
+c
+      xji11 =  xj22/det
+      xji12 = -xj12/det
+      xji21 = -xj21/det
+      xji22 =  xj11/det
+c
+c     Derivadas das funcoes de interpolacao:
+c
+      hx(1) =  xji11
+      hx(2) =  xji12
+      hx(3) = -xji11-xji12
+      hy(1) =  xji21
+      hy(2) =  xji22
+      hy(3) = -xji21-xji22
+c
+c     Matriz constitutiva:
+c
+      ym       = e(1)
+      ps       = e(2)
+      thic     = e(3)
+      if( thic .eq. 0 ) thic = 1.d0
+c ...
+      a1       = 1.d0 - ps
+      a2       = 1.d0 - ps*ps
+c ...
+      a        = ym/a2
+      b        = ps
+      c        = 0.5d0*a1 
+c ....
+      d11      = a
+      d12      = a*b
+      d22      = a
+      d33      = a*c  
+c .....................................................................
+c
+c ...
+      if(isw .eq. 3) go to 300
+c .....................................................................
+c
+c ... Matriz de rigidez:
+      do i = 1, nst
+        do j = 1, nst
+          s(j,i) = 0.d0
+        enddo
+      enddo
+c .....................................................................
+c
+c ...
+      wt1 = 0.5d0*det
+      do 220 j = 1, 3
+c        k1 = (j-1)*2+1
+         k1 = 2*j-1
+         k2 = k1 + 1    
+         do 210 i = 1, 3
+c          l1 = (i-1)*2+1
+           l1 = 2*i-1
+           l2 = l1 + 1    
+c                                                                    
+           s(l1,k1) = ( hx(i)*d11*hx(j) + hy(i)*d33*hy(j) ) * wt1
+c                                                                     
+           s(l1,k2) = ( hx(i)*d12*hy(j) + hy(i)*d33*hx(j) ) * wt1
+c                                                                      
+           s(l2,k1) = ( hy(i)*d12*hx(j) + hx(i)*d33*hy(j) ) * wt1
+c                                                                       
+           s(l2,k2) = ( hy(i)*d22*hy(j) + hx(i)*d33*hx(j) ) * wt1
+c                                                                      
+  210    continue
+  220 continue
+c .....................................................................
+c
+c ... Forcas internas:
+      call lku_m(s,u,p,nst)
+c .....................................................................
+c
+c .....................................................................      
+      return  
+c ======================================================================
+c
+c ... Tensoes nodais :
+c
+c ......................................................................
+  300 continue
+c ... tensao nodal | sxx syy 0 sxy|
+      call deform2d(hx,hy,u,epsi,3)
+      call stress2d_m(d11,d12,d22,d33,ps,.false.,epsi,p)
+c ...
+      p(5)  = p(1)
+      p(6)  = p(2)
+      p(7)  = p(3)
+      p(8)  = p(4)
+c ...
+      p(9)  = p(1)
+      p(10) = p(2)
+      p(11) = p(3)
+      p(12) = p(4)
+c .....................................................................
+  310 continue
+c .....................................................................
+c
+c ......................................................................
+      return
+c ======================================================================
+c
+c ... Cargas distribuidas no volume e no contorno:
+c
+c ......................................................................
+ 400  continue
+c ... forca e fluxo distribuida no contorno
+c     iq(1) = 1 | no 1 2 |
+c             2 | no 2 3 |
+c             3 | no 3 4 |     
+c             4 | no 4 1 |
+c
+c ... verifica se ha alguma lado com carga
+      tp = 0
+      do 435 i = 1, 3
+        tp    = tp + iq(i)
+  435 continue
+c .....................................................................
+c
+c ...
+      if( tp .gt. 0 ) then
+        do 440 j = 1, 3
+c ... lado 
+          if(iq(j) .gt. 0 ) then
+c ...
+            do 445 i = 1, 2 
+              no      = tria_side_node3(i,j)
+              xf(1,i) = x(1,no)
+              xf(2,i) = x(2,no)
+  445       continue
+c .....................................................................
+c
+c ... jacobiano
+            det = (xf(1,2)-xf(1,1))*(xf(1,2)-xf(1,1))
+     .          + (xf(2,2)-xf(2,1))*(xf(2,2)-xf(2,1))
+            if (det .le. 0.d0) goto 1000
+            det = dsqrt(det)
+c ......................................................................
+c
+c ... forcas
+            call tload(iq(j),0.d0,0.d0,ddum,face_f)
+c.......................................................................
+            wt1 = 0.5d0*det
+            do 455 i = 1, 2
+              no    = tria_side_node3(i,j)
+c              l1  = (no-1)*3+1
+c              wt1   = h(i)*w
+              l1    = 2*no-1
+              l2    = l1 + 1
+              p(l1) = p(l1) - face_f(1)*wt1
+              p(l2) = p(l2) - face_f(2)*wt1
+  455       continue
+c .....................................................................
+          endif
+c .....................................................................
+  440   continue
+c .....................................................................
+      endif
+c .....................................................................
+      return
+c ======================================================================
+c
+c ... Tensoes iniciais:                  
+c
+c ......................................................................
+  500 continue
+      return
+c ======================================================================
+c
+c ... Matriz geometrica:
+c
+c ......................................................................
+  600 continue
+c ......................................................................
+ 1000 continue
+      print*, '*** Subrotina ELMT02_MEC: determinante nulo ou negativo 
+     . do elemento ',nel,' na carga da aresta',j
+      stop
+ 1100 continue
+      print*, '*** Subrotina ELMT02_mec: determinante nulo ou negativo 
+     .do elemento ',nel
       stop
       end
 c **********************************************************************
@@ -528,7 +818,7 @@ c ....
       d33      = a*c  
 c .....................................................................
 c
-c ... tensao nodal | sxx syy szz sxy  0 0 0|
+c ... tensao nodal | sxx syy szz sxy |
       do 310 i = 1, 4
 c       tp = (i-1)*4 + 1
         tp  = 4*i - 3
@@ -646,7 +936,7 @@ c * x(ndm,nem) - coordenadas nodais locais                             *
 c * u(nst)     - graus de liberade por elemento (u)                    *
 c * p(nst)     - nao definido                                          *
 c * s(nst,nst) - nao definido                                          *
-c * txn(6,nen) - tensoes nodais                                        *      
+c * txn(4,nen) - tensoes nodais                                        *      
 c * ndm - dimensao                                                     *
 c * nst - numero de graus de liberdade por elemento (2*4)              *
 c * nel - numero do elemento                                           *
@@ -830,7 +1120,7 @@ c ....
       d33      = a*c  
 c .....................................................................
 c
-c ... tensao nodal | sxx syy szz sxy  0 0 0|
+c ... tensao nodal | sxx syy szz sxy |
       do 310 i = 1, 4
 c       tp = (i-1)*4 + 1
         tp  = 4*i - 3
@@ -1705,7 +1995,7 @@ c **********************************************************************
 c * Data de criacao    : 09/04/2016                                    *
 c * Data de modificaco : 00/00/0000                                    * 
 c * ------------------------------------------------------------------ *      
-c * ELMT06_PM: Elemento tetraedrico de 10 nos para problemas           *  
+c * ELMT12_MEC : Elemento tetraedrico de 10 nos para problemas         *  
 c * mecanico elasticos                                                 *
 c * ------------------------------------------------------------------ * 
 c * Parametros de entrada:                                             *
@@ -2159,7 +2449,7 @@ c **********************************************************************
 c * Data de criacao    : 09/04/2016                                    *
 c * Data de modificaco : 00/00/0000                                    * 
 c * ------------------------------------------------------------------ *       
-c * ELMT07_MEC: Elemento hexaedricos de 20 nos para problemas          *  
+c * ELMT013_MEC: Elemento hexaedricos de 20 nos para problemas         *  
 c * mecanico estaico-elasticos                                         *
 c * ------------------------------------------------------------------ * 
 c * Parametros de entrada:                                             *

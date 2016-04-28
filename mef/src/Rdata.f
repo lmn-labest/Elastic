@@ -111,7 +111,7 @@ c ... mecancico
 c ......................................................................
 c
 c ... numero do tensor de tensoes
-c ... | sxx syy szz sxy  0 0 0|
+c ... | sxx syy szz sxy |
       if( ndm .eq. 2) then
         ntn = 4
 c ... | sxx syy szz  sxy syz sxz |
