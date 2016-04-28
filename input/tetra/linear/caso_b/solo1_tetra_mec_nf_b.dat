@@ -1,0 +1,24 @@
+// Exemplo com cargas nodais dadas atraves da macro nodalforces
+// Exemplo similar ao caso (b) da apostila 
+// modulo de elsasticidade = 1.668d+01G MPa
+// possion                 = 0.3369
+// q                       = -3.9k MPa
+config 
+memory 6000 omp_elmt false nth_elmt 8 omp_solver false nth_solver 4 reord true bvtk false
+end config
+mesh
+nnode      1331 numel      6000 numat  1 maxno 4 ndf 3 dim 3
+materials
+1   6  1.668d+01 0.3369d+00 0.0+00
+end materials
+insert solo1_coor.dat
+insert solo1_elmt_tetra.dat
+insert solo1_boun_mec2.dat
+insert solo1_tetra_mec_nodalforces.dat
+end mesh
+maxnlit 2
+pgeo
+pmecres
+solvm
+pmecres
+stop

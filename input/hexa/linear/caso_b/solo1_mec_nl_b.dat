@@ -1,0 +1,31 @@
+// Exemplo com cargas nodalloads
+// Exemplo similar ao caso (a) da apostila 
+// modulo de elsasticidade = 1.668d+01G MPa
+// possion                 = 0.3369
+// q                       = -3.9k MPa
+config 
+memory 5000 omp_elmt false nth_elmt 2 omp_solver false nth_solver 2 reord true bvtk false
+end config
+pcg 10000 1.0d-11 diag
+mesh
+nnode      1331 numel      1000 numat  1 maxno 8 ndf 3 dim 3
+materials
+1  7  1.668d+01 0.3369d+00  
+end materials
+insert solo1_coor.dat
+insert solo1_elmt.dat
+insert solo1_boun_mec2.dat
+insert solo1_mec_nodalloads.dat
+loads
+1 1  0.d0
+2 1 -0.390d-01
+3 1 -0.195d-01
+4 1 -0.975d-02 
+end loads
+end mesh
+pgeo
+maxnlit 2
+pmecres
+solvm
+pmecres
+stop

@@ -1,0 +1,25 @@
+// Exemplo com cargas por elmtloads 
+// 1)Estado plano de deformacao
+// 2)Norma de energia do problema exato e raiz(uKu) = 1.379745
+// 3)Exemplo com cargas por nodal forces
+// 4)modulo de elsasticidade =  1.0  MPa
+// 5)possion                 =  0.3
+// 6)q                       = -1.0k MPa
+mesh
+nnode     10201 numel     20000 numat  1 maxno 3 ndf 2 dim 2
+materials
+1  2  1.0d0 0.3d0
+end materials
+insert tria_coor.dat
+insert tria_elmt.dat
+insert tria_boun.dat
+loads
+1 40 2 0.d0 -1.d0
+end loads
+end mesh
+maxnlit 2
+pgeo
+pmecres
+solvm
+pmecres
+stop

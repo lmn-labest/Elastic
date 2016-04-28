@@ -1,0 +1,28 @@
+// Exemplo com cargas por elemento dadas atraves da macro elmtloads
+// Exemplo similar ao caso (a) da apostila 
+// modulo de elsasticidade = 1.668d+01G MPa
+// possion                 = 0.3369
+// q                       = -3.9k MPa
+config 
+memory 6000 omp_elmt false nth_elmt 8 omp_solver false nth_solver 4 reord true bvtk false
+end config
+pcg 10000 1.d-11 diag
+mesh
+nnode      1331 numel      6000 numat  1 maxno 4 ndf 3 dim 3
+materials
+1   6  1.668d+01 0.3369d+00 0.0+00
+end materials
+insert solo1_coor.dat
+insert solo1_elmt_tetra.dat
+insert solo1_boun_mec.dat
+insert solo1_tetra_elmtloads.dat
+loads
+1 40 3 0.0d0 0.0d0 -3.9d+00
+end loads
+end mesh
+maxnlit 2
+pgeo
+pmecres
+solvm
+pmecres
+stop
