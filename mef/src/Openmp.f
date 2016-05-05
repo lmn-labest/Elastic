@@ -34,7 +34,7 @@ c .....................................................................
 c
 c ... openmp in compile time and run time
       if(my_id.eq.0 .and. max_num_threads_available .ne. 0)then
-        print*,"**************    PORO_MEC     ***********************"
+        print*,"**************  ELASTIC_MEC    ***********************"
         print*,"**************     OPENMP      ***********************"
         print*,"number of threads available: ",max_num_threads_available
         if(omp_elmt) print*,"number of threads in elmt  : ",nth_elmt
@@ -42,7 +42,7 @@ c ... openmp in compile time and run time
         print*,"******************************************************"
 c ...  openmp disable in complile time     
       elseif(my_id.eq.0)then
-        print*,"**************    PORO_MEC     ***********************"
+        print*,"**************  ESLATIC_MEC    ***********************"
         print*,"**************     OPENMP      ***********************"
         print*,"Openmp disable in compile time.                      "
         print*,"******************************************************"

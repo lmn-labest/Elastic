@@ -1,7 +1,7 @@
       program Mef
 c **********************************************************************
 c *                                                                    *
-c *   Metodo dos elementos finitos para problemas termo-mecanicos      *
+c *   Metodo dos elementos finitos para problemas mecanicos elasticos  *
 c *                                                                    *
 c **********************************************************************
       use Malloc
