@@ -1,0 +1,3 @@
+      integer iparam(4),max_block
+      parameter ( max_block = 200 )
+      common /precond/ iparam

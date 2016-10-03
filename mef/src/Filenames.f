@@ -1,7 +1,7 @@
       character*80 function name(NomeArqDados,NumArq,code)
 c *********************************************************************
 c * Data de criacao    : 12/12/2015                                   *
-c * Data de modificaco : 03/04/2016                                   * 
+c * Data de modificaco : 30/09/2016                                   * 
 c * ----------------------------------------------------------------- *
 c * NAME: nomes de aquivos                                            *
 c * ----------------------------------------------------------------- *
@@ -29,9 +29,10 @@ c *  8 ->                                                             *
 c *  9 ->                                                             *
 c * 10 ->                                                             * 
 c * 12 ->                                                             * 
-c * 13 ->                                                             *
+c * 13 -> arquivo de entrada do mpi                                   *
 c * 14 -> arquivo de tempos                                           *
 c * 15 -> arquivo do log do solver                                    *
+c * 16 -> mapa do particinamento gerado pelo front                    * 
 c * 30 -> arquivos de resultados por nos                              *
 c * 31 -> arquivos de tensoes total por nos                           *
 c * 32 -> arquivos de tensoes efetivas de terzaghi por nos            *
@@ -76,6 +77,11 @@ c ... geom .vtk
 c ... geom .vtu
       else if(code .eq. 8) then
         StrExtensao='_face_bc.vtu'
+c ...
+      elseif(code .eq. 13) then
+        write(StrExtensao,'( I6 )') NumArq
+        write(StrExtensao,'( A  )') adjustl(StrExtensao)
+        StrExtensao='_'//trim(StrExtensao)//'.dat'
 c ... log de tempos
       elseif(code .eq. 14) then
         write(StrExtensao,'( I6 )') NumArq
@@ -86,6 +92,10 @@ c ... log solver
         write(StrExtensao,'( I6 )') NumArq
         write(StrExtensao,'( A  )') adjustl(StrExtensao)
         StrExtensao='_log_'//trim(StrExtensao)//'.txt'
+      elseif(code .eq. 16) then
+        write(StrExtensao,'( I6 )') NumArq
+        write(StrExtensao,'( A  )') adjustl(StrExtensao)
+        StrExtensao='_fmap_'//trim(StrExtensao)//'.txt'
 c ... pu node file 
       elseif(code .eq. 30) then
         write(StrExtensao,'( I6 )') NumArq

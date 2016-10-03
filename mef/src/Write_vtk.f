@@ -42,6 +42,7 @@ c ... locais
 c ... variaveis dums
       real*8 ddum
       real*4 fdum
+      integer idum
 c ... arquivo      
       integer nout
       character*80 fileout,name,filein
@@ -61,13 +62,12 @@ c ===
       else
         open(unit=nout,file=fileout)
       endif  
-c     print*,fileout,nout
 c =====================================================================
 c
 c === cabecalho
       if(legacy) then
         write(aux,'(30a)')"Malha poro mec" 
-        call head_vtk(aux,bvtk,nout) 
+        call head_vtk(aux,bvtk,ddum,idum,.false.,nout)
       else  
         call head_vtu(nnode,numel,bvtk,nout) 
       endif  
@@ -206,7 +206,7 @@ c * ----------------------------------------------------------------- *
 c * Parametros de saida :                                             *
 c * ----------------------------------------------------------------- *
 c *********************************************************************
-      subroutine write_mesh_geo_bc(el   ,x         ,ie
+      subroutine write_mesh_geo_bc(el   ,x      ,ie
      .                         ,id   ,f         ,u0    
      .                         ,tx0  ,nload     ,eload
      .                         ,nnode,numel     ,ndf   ,ntn
@@ -1081,7 +1081,7 @@ c .....................................................................
 c *********************************************************************
 c
 c *********************************************************************
-c * SPLIT_U_P : pega a solução apenas nos vertices em divide em dois  *
+c * SPLIT_U_P : pega a solução apenas nos vertices em divide em dois*
 c *  vetores                                                          *
 c * ----------------------------------------------------------------- *
 c * Parametros de entrada :                                           *

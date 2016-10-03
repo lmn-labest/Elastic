@@ -111,7 +111,7 @@ c ... sistema de equacoes
 c ... precondicionador
       integer*8 i_m
 c ... arranjos globais (MPI - escrita)
-      integer*8 i_g,i_g1,i_g2
+      integer*8 i_g,i_g1,i_g2,i_g3
 c ......................................................................
 c
 c ... tensoes iniciais
@@ -177,14 +177,14 @@ c ... fcstress0 = tensoes iniciais utilizadas
       fstress0  = .false.
       fcstress0 = .false.
 c ... reordf  =  true -> reordenacao Cuthill-McKee
-      reordf  = .true.
+      reordf  = .false.
 c ... maxit   =  numero max. de iteracoes do solver iterativo
 c ... solvtol =  tolerancia para o solver iterativo
 c ... maxnlit =  numero max. de iteracoes nao-lineares
 c ... tol     =  tolerancia do algoritmo nao-linear
 c ... ngram   =  base de Krylov (utilizada somente no gmres)
 c ... precond =  1 - NONE, 2 - diag, 3 - iLDLt(0), 4 - iC(0)
-      maxit   =  8000
+      maxit   =  100
       solvtol =  1.d-11
       maxnlit =  2 
       tol     =  1.d-04
@@ -551,19 +551,46 @@ c
 c ......................................................................
   600 continue
 c ...
-      print*, 'Macro PGEO'
+      
       ntn   = 6
 c ... Geometria:
-      writetime = writetime + MPI_Wtime()-timei 
-      call write_mesh_geo_bc(ia(i_ix)   ,ia(i_x)    ,ia(i_ie)
+      if(mpi) then
+        
+        writetime = writetime + MPI_Wtime()-timei 
+        call global_ix(nen+1,numel_nov,i_ix,i_g,'ixg     ')
+        call global_v(ndm   ,nno_pload,i_x ,i_g1,'xg      ')
+c .....................................................................
+c
+c ...
+        if( my_id .eq. 0 ) then
+          print*, 'Macro PGEO'
+          call write_mesh_geo(ia(i_g),ia(i_g1),nnoG   ,nelG
+     .                     ,nen    ,ndm       ,prename,bvtk
+     .                     ,.true. ,nplot)
+        endif
+c .....................................................................
+c
+c ...        
+        i_g1 = dealloc('xg      ')
+        i_g  = dealloc('ixg     ')
+        call MPI_barrier(MPI_COMM_WORLD,ierr)
+        writetime = writetime + MPI_Wtime()-timei
+c ......................................................................
+c
+c ...
+      else
+        print*, 'Macro PGEO'
+        writetime = writetime + MPI_Wtime()-timei 
+        call write_mesh_geo_bc(ia(i_ix) ,ia(i_x)    ,ia(i_ie)
      .                      ,ia(i_id)   ,ia(i_f)    ,ia(i_u) 
      .                      ,ia(i_tx0)  ,ia(i_nload),ia(i_eload)
      .                      ,nnodev     ,numel      ,ndf     ,ntn
      .                      ,nen        ,ndm        ,prename
      .                      ,bvtk       ,macros     ,.true.
      .                      ,nplot      ,nout_face)
-      writetime = writetime + MPI_Wtime()-timei
-c ......................................................................
+        writetime = writetime + MPI_Wtime()-timei
+      endif
+c .....................................................................
       goto 50
 c ----------------------------------------------------------------------
 c
@@ -571,6 +598,14 @@ c ... Macro-comando: PGEOQ
 c
 c ......................................................................
   700 continue
+c ...
+      if(mpi) then
+        print*, 'Macro PGEOQ not enable for mpi !!'
+        call stop_mef()
+      endif
+c .....................................................................
+c
+c ...
       if(my_id.eq.0)  then  
         print*, 'Macro PGEOQ'
 c ... tetraedros de 10 nos     
@@ -904,10 +939,15 @@ c ... Residuo: b = F - K.u(n+1,i)
       elmtime = elmtime + MPI_Wtime()-timei
 c .....................................................................
 c
+c ... Comunicacao do residuo para o caso non-overlapping:
+      if (novlp) call communicate(ia(i_b),neqf1,neqf2,i_fmap,i_xf,
+     .                            i_rcvs,i_dspl)
+c ......................................................................
+c
 c ......................................................................
       resid = dsqrt(dot_par(ia(i_b),ia(i_b),neq_dot))
       if(i .eq. 1) resid0 = max(resid0,resid)
-      print*,'resid/resid0',resid/resid0,'resid',resid
+      if(my_id .eq. 0) print*,'resid/resid0',resid/resid0,'resid',resid
       if ((resid/resid0) .lt. tol) goto 1820     
 c ......................................................................            
 c
@@ -919,7 +959,7 @@ c ... solver (Ku(n+1,i+1) = b; u(t+dt) )
      .         ,solvtol ,maxit   ,ngram
      .         ,unsym   ,solver  ,neqf1   ,neqf2
      .         ,neq3    ,neq4    ,neq_dot
-     .         ,i_fmap  ,i_xf    ,i_rcvs ,i_dspl )
+     .         ,i_fmap  ,i_xf    ,i_rcvs ,i_dspl)
       soltime = soltime + MPI_Wtime()-timei
 c .....................................................................
 c
@@ -960,35 +1000,89 @@ c ... | sxx syy szz  sxy syz sxz |
       endif
 c ......................................................................
 c
+c ... 
+      if(mpi) then
+c ... comunicao
+        call global_v(ndf   ,nno_pload,i_u   ,i_g ,'dispG   ')
+        call global_ix(nen+1,numel_nov,i_ix  ,i_g1,'ixG     ')
+        call global_v(ndm   ,nno_pload,i_x   ,i_g2,'xG      ')
+        call global_v(ntn   ,nno_pload,i_tx0 ,i_g3,'tx0G    ')
+c ......................................................................
+c
+c
 c ...
-      i_tx  = alloc_8('tx      ',  ntn,nnodev)
-      i_ic  = alloc_4('ic      ',    1,nnodev)
+        if(my_id.eq.0) then
+c ...
+          i_tx  = alloc_8('tx      ',  ntn,nnoG)
+          i_ic  = alloc_4('ic      ',    1,nnoG)
 c .....................................................................
 c
 c ...
-      timei = MPI_Wtime()
-      call tform_mec(ia(i_ix)   ,ia(i_x)  ,ia(i_e)   ,ia(i_ie)
+          timei = MPI_Wtime()
+          call tform_mec(ia(i_g1) ,ia(i_g2),ia(i_e)   ,ia(i_ie)
+     .                 ,ia(i_ic)  ,ia(i_xl),ia(i_ul) 
+     .                 ,ia(i_txnl),ia(i_g) ,ia(i_g3),ia(i_tx) 
+     .                 ,nnoG      ,nelG    ,nen       ,nenv
+     .                 ,ndm       ,ndf     ,nst       ,ntn
+     .                 ,3         ,ilib)
+          tformtime = tformtime + MPI_Wtime()-timei
+c ......................................................................
+c
+c ...
+          fname = name(prename,istep,2)
+          call write_mesh_res_mec(ia(i_g1),ia(i_g2) ,ia(i_g),ia(i_tx)
+     .                         ,nnoG    ,nelG
+     .                         ,nen     ,ndm      ,ndf   ,ntn
+     .                         ,fname   ,.false.,.true.  ,nplot)
+          close(nplot)  
+c ......................................................................
+c
+c ...
+          i_ic  = dealloc('ic      ')
+          i_tx  = dealloc('tx      ')
+        endif
+c ......................................................................
+c
+c ...
+ 
+        i_g3  = dealloc('tx0G    ')
+        i_g2  = dealloc('xG      ')
+        i_g1  = dealloc('ixG     ')
+        i_g   = dealloc('dispG   ')
+c ......................................................................
+c
+c ...
+      else
+c ...
+        i_tx  = alloc_8('tx      ',  ntn,nnodev)
+        i_ic  = alloc_4('ic      ',    1,nnodev)
+c .....................................................................
+c
+c ...
+        timei = MPI_Wtime()
+        call tform_mec(ia(i_ix)   ,ia(i_x)  ,ia(i_e)   ,ia(i_ie)
      .               ,ia(i_ic)  ,ia(i_xl) ,ia(i_ul) 
      .               ,ia(i_txnl),ia(i_u)  ,ia(i_tx0),ia(i_tx) 
      .               ,nnodev    ,numel   ,nen       ,nenv
      .               ,ndm       ,ndf     ,nst       ,ntn
      .               ,3         ,ilib)
-      tformtime = tformtime + MPI_Wtime()-timei
+        tformtime = tformtime + MPI_Wtime()-timei
 c ......................................................................
 c
 c ...
-      fname = name(prename,istep,2)
-      open(nplot,file=fname)
-      call write_mesh_res_mec(ia(i_ix),ia(i_x)  ,ia(i_u),ia(i_tx)
+        fname = name(prename,istep,2)
+        call write_mesh_res_mec(ia(i_ix),ia(i_x)  ,ia(i_u),ia(i_tx)
      .                       ,nnodev  ,numel
      .                       ,nen     ,ndm      ,ndf   ,ntn
      .                       ,fname   ,.false.,.true.  ,nplot)
-      close(nplot)  
+        close(nplot)  
 c ......................................................................
 c
 c ...
-      i_ic  = dealloc('ic      ')
-      i_tx  = dealloc('tx      ')
+        i_ic  = dealloc('ic      ')
+        i_tx  = dealloc('tx      ')
+c ......................................................................
+      endif
 c ......................................................................
       goto 50     
 c ----------------------------------------------------------------------
@@ -1127,8 +1221,7 @@ c ......................................................................
       goto 50
 c ----------------------------------------------------------------------
 c
-c ... Macro-comando: PNTEMP impressao do fluxo de Calor por no no tempo
-c     (SETPNODE)                                                   
+c ... Macro-comando:                                               
 c ......................................................................
  3400 continue
       if(my_id.eq.0) print*, 'Macro '
@@ -1149,7 +1242,6 @@ c ... codigo para o arquivo up_node.txt
       ifiles = 1
 c .....................................................................
       call global_v(ndf,nno_pload,i_u,i_g1,'dispG   ')
-c     call global_v(  1,nno_pload,i_dp,i_g1,'dispG   ')
       string = 'DeslocAndPress'
       if( my_id .eq. 0) then
         do j = 1, num_pnode
@@ -1159,8 +1251,8 @@ c     call global_v(  1,nno_pload,i_dp,i_g1,'dispG   ')
         enddo
         new_file(ifiles) = .false.
       endif
-      if( nprcs .gt. 1) then
-        i_g1      = dealloc('dispG   ')
+      if(mpi) then
+        i_g1 = dealloc('dispG   ')
       endif
       call MPI_barrier(MPI_COMM_WORLD,ierr)
       goto 50
@@ -1169,96 +1261,6 @@ c
 c ... Macro-comando:                                                    
 c ......................................................................
  3600 continue
-      if(my_id.eq.0) print*, 'Macro PNSF    '
-      if(flag_pnd.eqv..false.) then
-        if(my_id.eq.0)print*,'Nemhum no de impressao para PNUP!'  
-        call stop_mef()
-      endif
-c ... calculo da tensoes, tensoes efetivas e fluxo de darcy nos vertices.
-c     ntn   = 6
-c .....................................................................
-c     i_tx  = alloc_8('tx      ',  ntn,nnodev)
-c     i_txe = alloc_8('txe     ',  ntn,nnodev)
-c     i_txb = alloc_8('txb     ',  ntn,nnodev)
-c     i_flux= alloc_8('flux    ',  ndm,nnodev)
-c     i_ic  = alloc_4('ic      ',    1,nnodev)
-c .....................................................................
-c
-c ...
-c     timei = MPI_Wtime()
-c     call tform_pm(ia(i_ix) ,ia(i_x)  ,ia(i_e)  ,ia(i_ie)
-c    .             ,ia(i_ic) ,ia(i_xl) ,ia(i_ul) ,ia(i_dpl)
-c    .             ,ia(i_txl),ia(i_u)  ,ia(i_dp) ,ia(i_tx0)
-c    .             ,ia(i_tx) ,ia(i_txb),ia(i_txe),ia(i_flux)
-c    .             ,nnodev   ,numel    ,nen      ,nenv
-c    .             ,ndm      ,ndf      ,nst      ,ntn
-c    .             ,3        ,ilib)
-c     tformtime = tformtime + MPI_Wtime()-timei
-c ......................................................................
-c
-c ... codigo para o arquivo stress_node.txt      
-c     code   = 31
-c     ifiles = 2
-c     string = 'stressTotal'
-c     if( my_id .eq. 0) then
-c       do j = 1, num_pnode
-c         call printnode(ia(i_tx),ia(i_no+j-1),ntn            ,istep,dt
-c    .                 ,string   ,prename     ,ia(i_nfile+j-1)
-c    .                 ,code     ,new_file(ifiles))
-c       enddo
-c       new_file(ifiles) = .false.
-c     endif
-c ......................................................................
-c
-c ... codigo para o arquivo stressE_node.txt      
-c     code   = 32
-c     ifiles = 3
-c     string = 'stressE'
-c     if( my_id .eq. 0) then
-c       do j = 1, num_pnode
-c         call printnode(ia(i_txe),ia(i_no+j-1),ntn            ,istep,dt
-c    .                 ,string   ,prename     ,ia(i_nfile+j-1)
-c    .                 ,code     ,new_file(ifiles))
-c       enddo
-c       new_file(ifiles) = .false.
-c     endif
-c ......................................................................
-c
-c ... codigo para o arquivo stressB_node.txt      
-c     code   = 33
-c     ifiles = 4
-c     string = 'stressBiot'
-c     if( my_id .eq. 0) then
-c       do j = 1, num_pnode
-c         call printnode(ia(i_txb),ia(i_no+j-1),ntn            ,istep,dt
-c    .                 ,string   ,prename     ,ia(i_nfile+j-1)
-c    .                 ,code     ,new_file(ifiles))
-c       enddo
-c       new_file(ifiles) = .false.
-c     endif
-c ......................................................................
-c
-c ... codigo para o arquivo flux_node.txt      
-c     code   = 34
-c     ifiles = 5
-c     string = 'stressFlux'
-c     if( my_id .eq. 0) then
-c       do j = 1, num_pnode
-c         call printnode(ia(i_flux),ia(i_no+j-1),ndm          ,istep,dt
-c    .                 ,string   ,prename     ,ia(i_nfile+j-1)
-c    .                 ,code     ,new_file(ifiles))
-c       enddo
-c       new_file(ifiles) = .false.
-c     endif
-c ......................................................................
-c
-c ...
-c     i_ic  = dealloc('ic      ')
-c     i_flux= dealloc('flux    ')
-c     i_txe = dealloc('txb     ')
-c     i_txe = dealloc('txe     ')
-c     i_tx  = dealloc('tx      ')
-c ......................................................................
       goto 50
 c ----------------------------------------------------------------------
 c
@@ -1317,8 +1319,6 @@ c ......................................................................
 c ... fecha o arquivo de entrada de dados
       close(nin)
 c ... fecha o arquivo gid , view3d  e log do solv
-c     close(ngid)
-c     close(nplot)
       close(logsolv)
       if(solver .eq. 5 ) close(logsolvd)
 c .....................................................................

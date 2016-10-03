@@ -62,10 +62,11 @@ c ... Gradientes conjugados com precondicionador diagonal:
          i_r = alloc_8('r       ',1,neq)
          i_s = alloc_8('s       ',1,neq)
 c ...    precondicionador diagonal:
-         call pre_diag(m,ad,neq)
+         call aequalb(m,ad,neq) 
 c ...    Comunicacao da diagonal para o caso non-overlapping:
          if (novlp) call communicate(m,neqf1i,neqf2i,i_fmapi,i_xfi,
      .                   i_rcvsi,i_dspli)
+         call pre_diag(m,m,neq,.false.)
 c ......................................................................
          if (ovlp) then
 c ......... Overlapping:
@@ -84,16 +85,18 @@ c .......................................................................
 c
 c ... sem OpenMp
             else
-               call pcg(neq,nad,ip,ja,ad,au,al,m,b,x,
-     .                  ia(i_z),ia(i_r),ia(i_s),
-     .                  tol,maxit,
+               call pcg(neq ,nad  ,ip     ,ja,
+     .                 ad ,au   ,al     ,m,
+     .                 b  ,x    ,ia(i_z),ia(i_r),ia(i_s),
+     .                 tol,maxit,
 c ... matvec comum:
-c    .                  matvec_csrcrsym,dot_par,
+c    .                 matvec_csrcrsym,dot_par
 c ... matvec desenrolado:
-     .                  matvec_csrcrsym1,dot_par,
+     .                 matvec_csrcrsym1,dot_par,
 c
-     .                  my_id,neqf1i,neqf2i,neq_doti,i_fmapi,i_xfi,
-     .                  .true.,.true.,.true.)
+     .                 my_id,neqf1i,neqf2i,neq_doti,i_fmapi,
+     .                 i_xfi,i_rcvsi,i_dspli,
+     .                 .true.,.true.,.true.,mpi)
 c ......................................................................
             endif
 c ......................................................................
@@ -115,17 +118,18 @@ c
 c .......................................................................
 c
 c ... sem OpenMp 
-               call pcg(neq,nad,ip,ja,ad,au,al,m,b,x,
-     .                  ia(i_z),ia(i_r),ia(i_s),
-     .                  tol,maxit,
+              call pcg(neq ,nad  ,ip   ,ja,
+     .                ad ,au   ,al     ,m,
+     .                b  ,x    ,ia(i_z),ia(i_r),ia(i_s),
+     .                tol,maxit,
 c ... matvec comum:
-c    .                  matvec_csrcsym,dot_par,
+c    .                matvec_csrcrsym,dot_par
 c ... matvec desenrolado:
-     .                  matvec_csrcsym1,dot_par,
+     .                matvec_csrcsym1,dot_par,
 c
-     .                  my_id,neqf1i,neqf2i,neq_doti,i_fmapi,
-     .                  i_xfi,i_rcvsi,i_dspli,
-     .                  .true.,.true.,.true.)
+     .                my_id,neqf1i,neqf2i,neq_doti,i_fmapi,
+     .                i_xfi,i_rcvsi,i_dspli,
+     .                .true.,.true.,.true.,mpi)
             endif
          endif
 c ......................................................................

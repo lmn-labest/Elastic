@@ -33,10 +33,10 @@ c ......................................................................
       neqf = 0
 c ... viz = loop nos vizinhos
       do viz = 1, nviz
-c ...    i = loop nos nós de fronteira do vizinho
+c ...    i = loop nos nohs de fronteira do vizinho
          do i = dspl0(viz)+1, dspl0(viz) + rcvs0(viz)
 c ...       j = numeração global do nó
-            j = fmap0(i)
+            j = fmap0(i)    
 c ...       n = numeração local do nó
             n = noGL(j)
 c ...       k = loop nos graus de liberdade do nó
@@ -82,7 +82,7 @@ c **********************************************************************
       include 'time.fi'
       real*8  x(*)
       integer i,j,k,l,p,d,c,e,status(MPI_STATUS_SIZE,2*nprcs)
-c ----------------------------------------------------------------------
+c ......................................................................
       if(mpi .eqv. .false.) return  
 c
 c ... Comunicacao de vetores
@@ -985,14 +985,14 @@ c ....................................................................
       write(nout,'(a)')"fmap"
       do i = 1, neqf1+neqf2
         write(nout,200)i,fmap(i)
-      enddo
+      enddo 
       write(nout,'(a)')"end fmap"
       write(nout,'(a)')"rcvs"
       do i = 1, nviz1+nviz2
         write(nout,200)i,rcvs(i)
       enddo
       write(nout,'(a)')"end rcvs"
-      write(100,'(a)')"dspl"
+      write(nout,'(a)')"dspl"
       do i = 1, nviz1+nviz2
         write(nout,200)i,dspl(i)
       enddo

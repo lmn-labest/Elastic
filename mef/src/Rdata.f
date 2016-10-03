@@ -63,7 +63,7 @@ c ......................................................................
       include 'parallel.fi'
       include 'termprop.fi'
 c ......................................................................      
-      integer nnodev,nnode,numel,numat,nen,nenv,ndf,ndft,ndm,nst,ntn
+      integer nnodev,nnode,numel,numat,nen,nenv,ndf,ndm,nst,ntn
       integer maxgrade
 c ... ponteiros      
       integer*8 i_e,i_x,i_f,i_nload,i_eload,i_inum
@@ -560,7 +560,7 @@ c
 c ... Paralelo:                                         
 c      
  1600 continue
-      call read_par(nin,nnode,numel,ndf,ndft) 
+      call read_par(nin,nnode,numel) 
       go to 100 
 c ......................................................................
 c
@@ -1277,7 +1277,7 @@ c
 c     Leitura da estrutura de dados do paralelo
 c
 c ======================================================================      
-      subroutine read_par(nin,nnode,numel,ndf,ndft)
+      subroutine read_par(nin,nnode,numel)
 c **********************************************************************
 c *                                                                    *
 c *   READ_PAR                                                         *
@@ -1306,7 +1306,7 @@ c **********************************************************************
 c      include 'mpif.h'
       include 'parallel.fi'
       include 'elementos.fi'
-      integer nin,nnode,numel,ndf,ndft,i,j,k
+      integer nin,nnode,numel,i,j,k
       character*160 comando,string
 c ......................................................................     
       read(nin,*) string,nnoG      
