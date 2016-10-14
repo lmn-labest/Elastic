@@ -1,8 +1,3 @@
-c*****************************Svn***************************************      
-c*$Date: 2011-03-16 15:32:53 -0300 (Wed, 16 Mar 2011) $                 
-c*$Rev: 914 $                                                           
-c*$Author: henrique $                                                   
-c***********************************************************************          
       subroutine reord(ix,iperm,nnodei,nnode,numel,nen,afl)
 c **********************************************************************
 c *                                                                    *
@@ -24,7 +19,7 @@ c ...    Grafo da malha:
 c
 c        ia(i0)=>ip(nnode+1) - ip(i) indica a posicao em ips do primeiro
 c                              no vizinho ao no i.
-c        ia(i1) => ips(ipos) - contem as conectividades nodais de cada no      
+c        ia(i1) => ips(ipos) - contem as conectividades nodais de cada no 
          call graph(ix,nnodei,numel,nen,i0,i1)
          i2 = alloc_4('iaux2   ',1,nnodei)                 
          i3 = alloc_4('iaux3   ',1,nnodei)

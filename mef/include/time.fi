@@ -1,11 +1,6 @@
-c*****************************Svn***************************************      
-c*$Date: 2011-09-27 11:21:33 -0300 (Tue, 27 Sep 2011) $                 
-c*$Rev: 948 $                                                           
-c*$Author: henrique $                                                   
-c***********************************************************************  
       real*8  soltime,elmtime,vectime,dstime,numeqtime,reordtime
       real*8  frontime,totaltime,matvectime,ovhtime,dottime,colortime
-      real*8  tformtime,writetime,precondtime,ifatsolvtime
+      real*8  tformtime,writetime,precondtime,ifatsolvtime,prebdiagtime
       real*8  time,time0
       integer*8 i_ts
       real*8  allgtime,gvtime,allrtime,sendtime,pmatrixtime
@@ -14,5 +9,5 @@ c ......................................................................
      .           reordtime,frontime,totaltime,matvectime,dottime,
      .           time,time0,allgtime,gvtime,allrtime,sendtime,ovhtime,
      .           colortime,pmatrixtime,writetime,tformtime,precondtime,
-     .           ifatsolvtime
+     .           ifatsolvtime, prebdiagtime
       common /tsctrl/ i_ts

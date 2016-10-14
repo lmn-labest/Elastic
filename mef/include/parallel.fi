@@ -10,6 +10,8 @@ c *      nno1a     - numero de nos em V1a                              *
 c *      nnof1     - numero de nos com comunicacao buffer de rec       *
 c *      nnof2     - numero de nos com comunicacao buffer de envio     *
 c *      nnofi     - numero de nos com comunicacao                     *
+c *      nnov      - numero total de nos de vertices                   *
+c *                  (da malha completa)                               *
 c *      nnoG      - numero total de nos (da malha completa)           *
 c *      numel_nov - numero de elementos novlp                         *
 c *      numel_ov  - numero de elementos ovlp                          *
@@ -37,8 +39,8 @@ c *      nad1      -  numero de coeficientes da matriz overlaing       *
 c *                                                                    *
 c **********************************************************************
 c ... nos
-      integer nno1,nno2,nno3,nno4,nno1a,nnof1,nnof2,nnoG,nno_pload
-      integer nnofi
+      integer nno1,nno2,nno3,nno4,nno1a,nnof1,nnof2,nnovG,nnoG
+     .       ,nno_pload,nnofi
 c .....................................................................      
 c
 c ... elementos
@@ -75,7 +77,7 @@ c
       integer mdp,mcw,nprcs,ierr,nviz1,nviz2,min,my_id
       logical mpi
 c ... variaveis comuns      
-      common /par_no/ nno1,nno2,nno3,nno4,nno1a,nnof1,nnof2,nnoG
+      common /par_no/ nno1,nno2,nno3,nno4,nno1a,nnof1,nnof2,nnovG,nnoG
       common /par_el/ numel_ov,numel_nov,nelG,ovlp,novlp
       common /par_com1/ nviz1,nviz2
       common /par_com2/ my_id,nprcs,ierr,min,mdp,mcw,mpi

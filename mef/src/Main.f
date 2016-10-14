@@ -34,11 +34,12 @@ c
       integer logsolv,fconf,logsolvd
       integer totfiles,openflag
       integer*8 i_no,i_nfile
+      integer print_nnode
       integer num_pnode
 c ... arquivo de impressao nos nos ( pu,stress,stressE,stressB,flux,...)  
       integer nfiles,ifiles
       parameter ( nfiles = 5)
-      logical new_file(nfiles),flag_pnd
+      logical new_file(nfiles),flag_pnd,print_quad
 c .....................................................................
 c
 c ... Variaveis de controle de solucao:
@@ -98,8 +99,8 @@ c
 c ... Ponteiros:
 c
 c ... malha
-      integer*8 i_ix,i_id,i_ie,i_nload,i_eload,i_e,i_x,i_xq,i_inum
-      integer*8 i_ic
+      integer*8 i_ix,i_id,i_ie,i_nload,i_eload,i_e,i_x,i_inum
+      integer*8 i_ic,i_fnno
 c ... arranjos locais ao elemento
       integer*8 i_xl,i_ul,i_pl,i_sl,i_ld,i_txl,i_txnl
 c ... forcas e graus de liberdade 
@@ -111,7 +112,7 @@ c ... sistema de equacoes
 c ... precondicionador
       integer*8 i_m
 c ... arranjos globais (MPI - escrita)
-      integer*8 i_g,i_g1,i_g2,i_g3
+      integer*8 i_g,i_g1,i_g2,i_g3,i_g4
 c ......................................................................
 c
 c ... tensoes iniciais
@@ -127,7 +128,7 @@ c ... Macro-comandos disponiveis:
 c
       data nmc /40/
       data macro/'loop    ','hextotet','mesh    ','        ','dt      ',
-     .'pgeo    ','pgeoquad','        ','gravity ','        ','gmres   ',
+     .'pgeo    ','        ','        ','gravity ','        ','gmres   ',
      .'        ','        ','bicgstab','pcg     ','        ','        ',
      .'solvm   ','pmecres ','        ','        ','        ','        ',
      .'        ','        ','maxnlit ','        ','nltol   ','        ',
@@ -177,14 +178,14 @@ c ... fcstress0 = tensoes iniciais utilizadas
       fstress0  = .false.
       fcstress0 = .false.
 c ... reordf  =  true -> reordenacao Cuthill-McKee
-      reordf  = .false.
+      reordf    = .true.
 c ... maxit   =  numero max. de iteracoes do solver iterativo
 c ... solvtol =  tolerancia para o solver iterativo
 c ... maxnlit =  numero max. de iteracoes nao-lineares
 c ... tol     =  tolerancia do algoritmo nao-linear
 c ... ngram   =  base de Krylov (utilizada somente no gmres)
 c ... precond =  1 - NONE, 2 - diag, 3 - iLDLt(0), 4 - iC(0)
-      maxit   =  100
+      maxit   =  10000
       solvtol =  1.d-11
       maxnlit =  2 
       tol     =  1.d-04
@@ -196,10 +197,11 @@ c ... stge    =  1 (csr), 2 (edges), 3 (ebe), 4 (skyline)
       unsym   = .false.
       solver  =  1
       stge    =  1
-c     block_pu= .true.
-      resid0      =  0.d0
-c ... ilib    =  1 define a biblioteca padrão ( default = poromec )
+      resid0  =  0.d0
+c ... ilib    =  1 define a biblioteca padrão ( default = mec )
       ilib    =  1
+c ... print_quad = escrita dos nohs quadraticos
+      print_quad = .true.
 c ... campo gravitacional (Padrao)
       gravity(1)  =   0.0d0
       gravity(2)  =   0.0d0
@@ -359,16 +361,18 @@ c
 c      call rdat(nnode,numel,numat,nen,ndf,ndm,nst,i_ix,i_id,i_ie,
 c     .          i_nload,i_eload,i_inum,i_e,i_x,i_f,i_u,i_v,i_a,nin)
 c
-      call rdat(nnode     ,nnodev  ,numel  ,numat  
+      call rdat(nnode     ,nnodev  ,numel      ,numat  
      .         ,nen       ,nenv   
-     .         ,ndf       ,ndm     ,nst    ,i_ix  
-     .         ,i_ie      ,i_inum  ,i_e    ,i_x
-     .         ,i_id      ,i_nload ,i_eload,i_f  
-     .         ,i_u       ,i_tx0  
-     .         ,fstress0  ,fmec    ,nin ) 
+     .         ,ndf       ,ndm     ,nst        ,i_ix  
+     .         ,i_ie      ,i_inum  ,i_e        ,i_x
+     .         ,i_id      ,i_nload ,i_eload    ,i_f  
+     .         ,i_u       ,i_tx0   ,i_fnno
+     .         ,fstress0  ,fmec    ,print_quad ,nin ) 
 c
 c    -----------------------------------------------------------------
-c    | ix | id | ie | nload | eload | inum | e | x | f | u | tx0 |
+c    |  ix  | id | ie | nload | eload | inum | e | x | f | u | tx0 |
+c
+c    | fnno |    
 c    -----------------------------------------------------------------
 c ......................................................................      
 c
@@ -379,22 +383,28 @@ c ......................................................................
 c
 c.... Controle de tempos:
 c
-      soltime      = 0.d0
+      soltime      = 0.d0 
       elmtime      = 0.d0
-      tformtime    = 0.d0
       vectime      = 0.d0
-      ovhtime      = 0.d0
+      dstime       = 0.d0
+      numeqtime    = 0.d0
+      reordtime    = 0.d0
+      frontime     = 0.d0
+      totaltime    = 0.d0
+      matvectime   = 0.d0
       dottime      = 0.d0
-      gvtime       = 0.d0
       allgtime     = 0.d0
+      gvtime       = 0.d0
       allrtime     = 0.d0
       sendtime     = 0.d0
-      matvectime   = 0.d0
+      ovhtime      = 0.d0
       colortime    = 0.d0
       pmatrixtime  = 0.d0
       writetime    = 0.d0
+      tformtime    = 0.d0
       precondtime  = 0.d0
       ifatsolvtime = 0.d0
+      prebdiagtime = 0.d0
       totaltime    = MPI_Wtime()
 c ......................................................................      
 c
@@ -405,7 +415,7 @@ c
        call reord(ia(i_ix),ia(i_inum),nno1-nno1a,nnode,numel,nen,reordf)
       else
        call reord(ia(i_ix),ia(i_inum),nnode,nnode,numel,nen,reordf)
-      endif
+      endif      
       reordtime = MPI_Wtime()-timei
 c ......................................................................
 c
@@ -423,8 +433,8 @@ c
 c ... Front Mpi
       timei = MPI_Wtime()
       call init_front(i_noLG,i_noGL,nno1,nno2,nno3,nnofi
-     .                ,nno_pload
-     .                ,nnoG,nelG,nnode,numel,ovlp,novlp,nprcs,nviz1
+     .                ,nno_pload,nnovG,nnoG
+     .                ,nelG,nnodev,nnode,numel,ovlp,novlp,nprcs,nviz1
      .                ,nviz2,i_rreqs,i_sreqs,i_rcvs0i,i_dspl0i
      .                ,i_fmap0i,mpi)
 c
@@ -436,27 +446,27 @@ c
      .                ,i_fmap,i_rcvs,i_dspl,i_xf
      .                ,'fmap     ','rcvs    ','dspl    ','xf      ',0)
       frontime = MPI_Wtime()-timei
-c -------------------------------------------------------------------
-c | noLG | noGL | elLG | fmap | rcvs | dspl | fmapt | rcvst | dsplt |
-c -------------------------------------------------------------------
+c ----------------------------------------------------------------------
+c                | noLG | noGL | elLG | fmap | rcvs | dspl | 
+c ----------------------------------------------------------------------
 c
-c                     ----------------------------                    
+c ----------------------------------------------------------------------             
 c                     | fmap0i | rcvs0i | dspl0i |
-c                     ----------------------------                    
+c ----------------------------------------------------------------------                      
 c ......................................................................
 c
 c.... Arranjos locais de elemento:
 c
 c ... mecanico
       if(fmec) then
-        i_xl  = alloc_8('xl      ',ndm,nenv)
-        i_ul  = alloc_8('ul      ',1  ,nst)
-        i_pl  = alloc_8('pl      ',1  ,nst)
+        i_xl   = alloc_8('xl      ',ndm,nenv)
+        i_ul   = alloc_8('ul      ',1  ,nst)
+        i_pl   = alloc_8('pl      ',1  ,nst)
 c ...      
-        i_txnl= alloc_8('txnl    ',  6,nen)
+        i_txnl = alloc_8('txnl    ',  6,nen)
 c ...      
-        i_sl  = alloc_8('sl      ',nst,nst)
-        i_ld  = alloc_4('ld      ',  1,nst)
+        i_sl   = alloc_8('sl      ',nst,nst)
+        i_ld   = alloc_4('ld      ',  1,nst)
       endif
 c .....................................................................
 c
@@ -550,9 +560,13 @@ c ... Macro-comando: PGEO
 c
 c ......................................................................
   600 continue
-c ...
-      
+c ...     
       ntn   = 6
+c ...
+      print_nnode = nnovG   
+      if(print_quad) print_nnode = nnoG
+c ......................................................................
+c
 c ... Geometria:
       if(mpi) then
         
@@ -564,9 +578,9 @@ c
 c ...
         if( my_id .eq. 0 ) then
           print*, 'Macro PGEO'
-          call write_mesh_geo(ia(i_g),ia(i_g1),nnoG   ,nelG
-     .                     ,nen    ,ndm       ,prename,bvtk
-     .                     ,.true. ,nplot)
+          call write_mesh_geo(ia(i_g),ia(i_g1),print_nnode,nelG
+     .                       ,nen    ,ndm     ,prename    ,bvtk
+     .                       ,.true. ,nplot)
         endif
 c .....................................................................
 c
@@ -584,7 +598,7 @@ c ...
         call write_mesh_geo_bc(ia(i_ix) ,ia(i_x)    ,ia(i_ie)
      .                      ,ia(i_id)   ,ia(i_f)    ,ia(i_u) 
      .                      ,ia(i_tx0)  ,ia(i_nload),ia(i_eload)
-     .                      ,nnodev     ,numel      ,ndf     ,ntn
+     .                      ,print_nnode,numel      ,ndf     ,ntn
      .                      ,nen        ,ndm        ,prename
      .                      ,bvtk       ,macros     ,.true.
      .                      ,nplot      ,nout_face)
@@ -594,52 +608,10 @@ c .....................................................................
       goto 50
 c ----------------------------------------------------------------------
 c
-c ... Macro-comando: PGEOQ
+c ... Macro-comando: 
 c
 c ......................................................................
   700 continue
-c ...
-      if(mpi) then
-        print*, 'Macro PGEOQ not enable for mpi !!'
-        call stop_mef()
-      endif
-c .....................................................................
-c
-c ...
-      if(my_id.eq.0)  then  
-        print*, 'Macro PGEOQ'
-c ... tetraedros de 10 nos     
-        if( nen .eq. 10 ) then
-          i_xq = alloc_8('xq      ',ndm,nnode)
-          call mkCoorQuad(ia(i_x) ,ia(i_xq)
-     .                   ,ia(i_ix)
-     .                   ,numel   ,nen  
-     .                   ,nnode   ,nnodev  ,ndm)   
-          ntetra10(1:4) = ntetra4(1:4)   
-          ntetra4(1:4)  = 0 
-          call write_mesh_geo(ia(i_ix)   ,ia(i_xq),nnode   ,numel
-     .                     ,nen    ,ndm     ,prename,.false.
-     .                     ,.true. ,nplot)
-          ntetra4(1:4)  = ntetra10(1:4)
-          ntetra10(1:4) = 0
-          i_xq = dealloc('xq      ') 
-c ... hexaedros de 20 nos     
-        else if( nen .eq. 20 ) then
-          i_xq = alloc_8('xq      ',ndm,nnode)
-          call mkCoorQuad(ia(i_x) ,ia(i_xq)
-     .                   ,ia(i_ix)
-     .                   ,numel   ,nen  
-     .                   ,nnode   ,nnodev  ,ndm)   
-          nhexa20(1:4) = nhexa8(1:4)   
-          nhexa8(1:4)  = 0 
-          call write_mesh_geo(ia(i_ix)   ,ia(i_xq),nnode   ,numel
-     .                     ,nen    ,ndm     ,prename,.false.
-     .                     ,.true. ,nplot)
-          nhexa8(1:4)  = nhexa20(1:4)
-          nhexa20(1:4) = 0
-          i_xq = dealloc('xq      ')      
-        endif
-      endif
       goto 50
 c ----------------------------------------------------------------------
 c
@@ -1007,14 +979,17 @@ c ... comunicao
         call global_ix(nen+1,numel_nov,i_ix  ,i_g1,'ixG     ')
         call global_v(ndm   ,nno_pload,i_x   ,i_g2,'xG      ')
         call global_v(ntn   ,nno_pload,i_tx0 ,i_g3,'tx0G    ')
+        call global_iv(1    ,nno_pload,i_fnno,i_g4,'fnnoG   ')
 c ......................................................................
 c
 c
 c ...
         if(my_id.eq.0) then
 c ...
-          i_tx  = alloc_8('tx      ',  ntn,nnoG)
-          i_ic  = alloc_4('ic      ',    1,nnoG)
+          i_tx  = alloc_8('tx      ',  ntn,print_nnode)
+          i_ic  = alloc_4('ic      ',    1,print_nnode)
+          call azero(ia(i_tx)    ,print_nnode*ntn)
+          call mzero(ia(i_ic)    ,print_nnode)
 c .....................................................................
 c
 c ...
@@ -1022,18 +997,20 @@ c ...
           call tform_mec(ia(i_g1) ,ia(i_g2),ia(i_e)   ,ia(i_ie)
      .                 ,ia(i_ic)  ,ia(i_xl),ia(i_ul) 
      .                 ,ia(i_txnl),ia(i_g) ,ia(i_g3),ia(i_tx) 
-     .                 ,nnoG      ,nelG    ,nen       ,nenv
-     .                 ,ndm       ,ndf     ,nst       ,ntn
-     .                 ,3         ,ilib)
+     .                 ,ia(i_g4) 
+     .                 ,nnovG     ,nnoG
+     .                 ,nelG      ,nenv      ,nen
+     .                 ,ndm       ,ndf       ,nst  ,ntn
+     .                 ,3         ,print_quad,ilib)
           tformtime = tformtime + MPI_Wtime()-timei
 c ......................................................................
 c
 c ...
           fname = name(prename,istep,2)
-          call write_mesh_res_mec(ia(i_g1),ia(i_g2) ,ia(i_g),ia(i_tx)
-     .                         ,nnoG    ,nelG
-     .                         ,nen     ,ndm      ,ndf   ,ntn
-     .                         ,fname   ,.false.,.true.  ,nplot)
+          call write_mesh_res_mec(ia(i_g1) ,ia(i_g2) ,ia(i_g),ia(i_tx)
+     .                         ,print_nnode,nelG
+     .                         ,nen        ,ndm      ,ndf   ,ntn
+     .                         ,fname      ,.false.,.true.  ,nplot)
           close(nplot)  
 c ......................................................................
 c
@@ -1044,7 +1021,7 @@ c ...
 c ......................................................................
 c
 c ...
- 
+        i_g4  = dealloc('fnnoG   ')
         i_g3  = dealloc('tx0G    ')
         i_g2  = dealloc('xG      ')
         i_g1  = dealloc('ixG     ')
@@ -1054,27 +1031,31 @@ c
 c ...
       else
 c ...
-        i_tx  = alloc_8('tx      ',  ntn,nnodev)
-        i_ic  = alloc_4('ic      ',    1,nnodev)
+        i_tx  = alloc_8('tx      ',  ntn,print_nnode)
+        i_ic  = alloc_4('ic      ',    1,print_nnode)
+        call azero(ia(i_tx)    ,print_nnode*ntn)
+        call azero(ia(i_ic)    ,print_nnode)
 c .....................................................................
 c
 c ...
         timei = MPI_Wtime()
-        call tform_mec(ia(i_ix)   ,ia(i_x)  ,ia(i_e)   ,ia(i_ie)
+        call tform_mec(ia(i_ix) ,ia(i_x)  ,ia(i_e)  ,ia(i_ie)
      .               ,ia(i_ic)  ,ia(i_xl) ,ia(i_ul) 
      .               ,ia(i_txnl),ia(i_u)  ,ia(i_tx0),ia(i_tx) 
-     .               ,nnodev    ,numel   ,nen       ,nenv
-     .               ,ndm       ,ndf     ,nst       ,ntn
-     .               ,3         ,ilib)
+     .               ,ia(i_fnno) 
+     .               ,nnodev    ,nnode  
+     .               ,numel     ,nenv      ,nen
+     .               ,ndm       ,ndf       ,nst       ,ntn
+     .               ,3         ,print_quad,ilib)
         tformtime = tformtime + MPI_Wtime()-timei
 c ......................................................................
 c
 c ...
         fname = name(prename,istep,2)
-        call write_mesh_res_mec(ia(i_ix),ia(i_x)  ,ia(i_u),ia(i_tx)
-     .                       ,nnodev  ,numel
-     .                       ,nen     ,ndm      ,ndf   ,ntn
-     .                       ,fname   ,.false.,.true.  ,nplot)
+        call write_mesh_res_mec(ia(i_ix) ,ia(i_x)  ,ia(i_u),ia(i_tx)
+     .                       ,print_nnode,numel
+     .                       ,nen        ,ndm      ,ndf   ,ntn
+     .                       ,fname      ,.false.,.true.  ,nplot)
         close(nplot)  
 c ......................................................................
 c
@@ -1149,7 +1130,7 @@ c ......................................................................
       goto 50
 c ----------------------------------------------------------------------
 c
-c ... Macro-comando: NLSTATIC
+c ... Macro-comando: NLTOL
 c
 c ......................................................................
  2800 continue
@@ -1232,12 +1213,12 @@ c ... Macro-comando: PNDISP impressao do deslocamento por no no tempo
 c     (SETPNODE)                                                   
 c ......................................................................
  3500 continue
-      if(my_id.eq.0) print*, 'Macro PNUP'      
+      if(my_id.eq.0) print*, 'Macro PNU'      
       if(flag_pnd.eqv..false.) then
-        if(my_id.eq.0)print*,'Nemhum no de impressao para PNUP!'  
+        if(my_id.eq.0)print*,'Nemhum no de impressao para PNU!'  
         call stop_mef()
       endif
-c ... codigo para o arquivo up_node.txt      
+c ... codigo para o arquivo u_node.txt      
       code   = 30
       ifiles = 1
 c .....................................................................
@@ -1345,24 +1326,6 @@ c ...
 c .....................................................................
       end
 c **********************************************************************      
-      subroutine testeMatvec(ia ,ja,ad,al
-     .                      ,x  ,b
-     .                      ,neq,nequ,nad,nadpu)
-      implicit none
-      integer ia(*),ja(*),dum
-      real*8 ad(*),al(*),x(*),b(*)
-      integer neq,nequ,nad,nadpu,i
-      integer*8 idum
-c     call matvec_csrcb(neq,nequ,ia,ja,ia(neq+2),ja(nad+1)
-c    .                 ,ad ,al  ,al(nad+1),b,x 
-c    .                 ,dum,dum,idum,idum,idum,idum)
-c ...
-      do i = 1, neq
-        print*,i,x(i),b(i)
-      enddo
-c .....................................................................
-      return
-      end
 c      
       subroutine printv (v,n)
       implicit none 

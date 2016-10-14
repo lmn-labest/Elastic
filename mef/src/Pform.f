@@ -250,13 +250,15 @@ c
 c **********************************************************************
       subroutine tform_mec(ix    ,x    ,e   ,ie
      .                    ,ic    ,xl   ,ul  
-     .                    ,pl    ,u    ,tx0 ,t   
-     .                    ,nnodev,numel,nen ,nenv
-     .                    ,ndm   ,ndf  ,nst ,ntn  
-     .                    ,isw   ,ilib)
+     .                    ,pl    ,u    ,tx0 ,t 
+     .                    ,fnno  
+     .                    ,nnodev,nnode
+     .                    ,numel ,nenv     ,nen
+     .                    ,ndm   ,ndf      ,nst ,ntn  
+     .                    ,isw   ,qnode    ,ilib)
 c **********************************************************************
 c * Data de criacao    : 09/04/2016                                    *
-c * Data de modificaco : 00/00/0000                                    * 
+c * Data de modificaco : 09/10/2016                                    * 
 c * ------------------------------------------------------------------ * 
 c * TFORM: caluclo das tensoes e dos fluxo nodal nos vertices          *                                                   *
 c * ------------------------------------------------------------------ * 
@@ -273,10 +275,13 @@ c * pl(ntn*nen)      - nao definido                                    *
 c * u(ndf,nnode)     - solucao corrente                                *
 c * tx0(ntn,nnodev)  - tensao inicial                                  *
 c * t(ntn,nnodev)    - nao definido                                    *
+c * fnno(nnode)      - identifica dos nos de vertices                  * 
+c *                    ( 1 - vertice | 0 )                             *
 c * nnodev           - numero de nos de vertices                       *
+c * nnode            - numero de nos totais                            *
 c * numel            - numero de elementos                             *
-c * nen              - numero max. de nos por elemento                 *
 c * nenv             - numero de nos de vertice por elemento           *
+c * nen              - numero max. de nos por elemento                 *
 c * ndf              - numero max. de graus de liberdade por no        *
 c * nst              - nst = nen*ndf                                   *
 c * ndm              - dimensao                                        *
@@ -285,7 +290,8 @@ c * ntn              - numero max. de derivadas por no                 *
 c * ovlp             - chave indicativa de overlapping                 *
 c * nprcs            - numero de processos                             *
 c * isw              - codigo de instrucao para as rotinas             *
-c *                    de elemento                                     *
+c *                    de elemento                                     * 
+c * qnode            - nos quadraticos (true|false)                    *
 c * ilib             - determina a biblioteca do elemento              *
 c * ------------------------------------------------------------------ * 
 c * Parametros de saida:                                               *
@@ -301,33 +307,39 @@ c **********************************************************************
 c     include 'mpif.h'
       include 'parallel.fi'
       include 'termprop.fi'
-      integer nnodev,numel,nen,nenv,ndf,nst,ndm,ntn
+      integer nnodev,nnode,numel,nenv,nen,ndf,nst,ndm,ntn
 c ......................................................................      
-      integer ix(nen+1,*),ie(*),ic(nnodev)
-      integer nel,ma,iel,i,j,k,k1,no,kk
+      integer ix(nen+1,*),ie(*),ic(*),fnno(*)
+      integer nel,ma,iel,i,j,k,k1,no,kk,nenl
       integer ilib,isw
-      real*8  xl(ndm,nenv),ul(nst),pl(nenv*ntn)
+      real*8  xl(ndm,nenv),ul(nst),pl(nen*ntn)
       real*8  x(ndm,*),e(prop,*)
       real*8  u(ndf,*),el(prop),tx0(ntn,*)
       real*8  t(ntn,*)
 c ...
-      logical ldum
+      logical ldum,qnode
       integer idum
       real*8 ddum
 c ......................................................................
-c
-c ... deslocamentos do vetor local p
+c 
+c ...
+      if(qnode) then
+        nenl = nen
+      else
+        nenl = nenv
+      endif
 c ......................................................................
 c
 c ...
-      do 30 i = 1, nnodev
-        ic(i) = 0
+      do 30 i = 1, nnode
+c       if(fnno(i) .eq. 1) then
+          ic(i) = 0
 c ... tensao
-        do 10 j = 1, ntn
-           t(j,i) = 0.d0
-   10   continue 
+          do 10 j = 1, ntn
+            t(j,i) = 0.d0
+   10     continue 
 c ......................................................................
-c
+c       endif
    30 continue 
 c ......................................................................
 c
@@ -335,7 +347,7 @@ c ... Loop nos elementos:
       do 900 nel = 1, numel
         kk = 0
 c ...
-        do 300 i = 1, nenv*ntn
+        do 300 i = 1, nen*ntn
           pl(i) = 0.d0
   300   continue
 c .......................................................................
@@ -374,7 +386,7 @@ c ...... Chama biblioteca de elementos:
         call elmlib_mec(el,idum,xl,ul,pl,ddum,ddum,ddum,ndm,nst,nel
      .                 ,iel,isw,ma,idum,ilib)
 c ...... media do vetor global
-        do 800 i = 1, nenv
+        do 800 i = 1, nenl
            no = ix(i,nel)
            if (no .le. 0) go to 800
            ic(no) = ic(no) + 1  
@@ -390,13 +402,15 @@ c
 c ... Comunica vetor de contagem de elementos por no'
 c     if (novlp) call allgatheri(ic,i_xfi)
 c .......................................................................
-      do 1000 i = 1, nnodev
+      do 1000 i = 1, nnode
+c       if(fnno(i) .eq. 1) then
 c ... tensao
-        do 1010 j = 1, ntn
+          do 1010 j = 1, ntn
 c ... tensao total            
-         t(j,i)  = t(j,i)/ic(i)  + tx0(j,i)
- 1010   continue 
+            t(j,i)  = t(j,i)/ic(i)  + tx0(j,i)
+ 1010     continue 
 c ......................................................................
+c       endif
  1000 continue
 c ......................................................................
 c

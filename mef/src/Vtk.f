@@ -21,7 +21,6 @@ c * Prametros de saida:                                                *
 c * -------------------------------------------------------------------*
 c * -------------------------------------------------------------------*
 c **********************************************************************
-c **********************************************************************
       subroutine coor_vtk(coor,nnode,ndm,bvtk,nfile)
       implicit none
       integer nnode,ndm,nfile
@@ -168,7 +167,7 @@ c **********************************************************************
       subroutine elm_vtk(nos,numel,nen,bvtk,nfile)
 c **********************************************************************
 c * Data de criacao    : 00/00/0000                                    *
-c * Data de modificaco : 00/00/0000                                    * 
+c * Data de modificaco : 12/10/2016                                    * 
 c * ------------------------------------------------------------------ *  
 c * ELM_VTK: escreve elementos nos formato vtk com os seus respectivos *
 c *           materias                                                 *
@@ -220,7 +219,278 @@ c ... Calculo do numero de tipo de cada elemento
       nh20 = nhexa20(1)
       numet =3*nb2 + 4*nt3 + 5*nq4 + 5*nt4 + 9*nh8 + 11*nt10
      .      +21*nh20
-c ... elemento em overllaping 
+c ... total de elemntos e tamnhanho dos dados totais
+      if(bvtk)then
+        write(str1(1:15),'(i15)')numel
+        write(str2(1:15),'(i15)')numet
+        buffer = lf//'CELLS '//str1//str2//lf
+        write(nfile) trim(buffer)  
+      else
+        write(nfile,'(a,i10,i10)') 'CELLS ',numel,numet  
+      endif 
+c ... escrevendo a malha
+c     
+c ... nos dos elementos
+c      
+c ......................................................................
+      if (nbar2(1) .gt. 0) then
+        nnoel = 2 
+        do i = nbar2(2), nbar2(2) + nbar2(1)-1
+          if(bvtk)then
+             write(nfile) nnoel,(nos(j,i)-1,j=1,2)
+          else
+             write(nfile,'(10i10)') nnoel,(nos(j,i)-1,j=1,2)
+          endif  
+        enddo
+      endif
+c ......................................................................
+c
+c ......................................................................
+      if (ntria3(1) .gt. 0) then
+        nnoel = 3 
+        do i = ntria3(2), ntria3(2) + ntria3(1)-1
+          if(bvtk)then
+            write(nfile) nnoel,(nos(j,i)-1,j=1,3)
+          else
+            write(nfile,'(10i10)') nnoel,(nos(j,i)-1,j=1,3)
+          endif  
+        enddo
+      endif
+c ......................................................................
+c
+c ......................................................................
+      if (nquad4(1) .gt. 0) then
+        nnoel = 4 
+        do i = nquad4(2), nquad4(2) + nquad4(1)-1
+          if(bvtk)then
+            write(nfile) nnoel,(nos(j,i)-1,j=1,4)
+          else
+            write(nfile,'(10i10)') nnoel,(nos(j,i)-1,j=1,4)
+          endif  
+        enddo
+      endif
+c ......................................................................
+      if (ntetra4(1) .gt. 0) then
+        nnoel = 4 
+        do i = ntetra4(2), ntetra4(2) + ntetra4(1)-1
+          if(bvtk)then
+            write(nfile) nnoel,(nos(j,i)-1,j=1,4)
+          else
+            write(nfile,'(10i10)') nnoel,(nos(j,i)-1,j=1,4)
+          endif  
+        enddo              
+      endif
+c ......................................................................
+      if (nhexa8(1) .gt. 0) then
+        nnoel = 8 
+        do i = nhexa8(2), nhexa8(2) + nhexa8(1)-1
+          if(bvtk)then
+            write(nfile) nnoel,(nos(j,i)-1,j=1,8)
+          else
+            write(nfile,'(10i10)') nnoel,(nos(j,i)-1,j=1,8)
+          endif  
+        enddo 
+      endif
+c ......................................................................
+c
+c ......................................................................
+      if (ntetra10(1) .gt. 0) then
+        nnoel = 10 
+        do i = ntetra10(2), ntetra10(2) + ntetra10(1)-1
+          if(bvtk)then
+            write(nfile) nnoel,(nos(j,i)-1,j=1,10)
+          else
+            write(nfile,'(11i10)') nnoel,nos(1 ,i)-1,nos(2,i)-1
+     .                                  ,nos(3 ,i)-1,nos(4,i)-1
+     .                                  ,nos(5 ,i)-1,nos(8,i)-1
+     .                                  ,nos(6 ,i)-1,nos(7,i)-1
+     .                                  ,nos(10,i)-1,nos(9,i)-1
+          endif  
+        enddo 
+      endif
+c ......................................................................
+c
+c ......................................................................
+      if (nhexa20(1) .gt. 0) then
+        nnoel = 20 
+        do i = nhexa20(2), nhexa20(2) + nhexa20(1)-1
+          if(bvtk)then
+            write(nfile) nnoel,(nos(j,i)-1,j=1,20)
+          else
+            write(nfile,'(21i10)') nnoel
+     .                  ,nos( 5,i)-1,nos( 6,i)-1,nos( 7,i)-1,nos( 8,i)-1
+     .                  ,nos( 1,i)-1,nos( 2,i)-1,nos( 3,i)-1,nos( 4,i)-1
+     .                  ,nos(13,i)-1,nos(14,i)-1,nos(15,i)-1,nos(16,i)-1
+     .                  ,nos( 9,i)-1,nos(10,i)-1,nos(11,i)-1,nos(12,i)-1
+     .                  ,nos(17,i)-1,nos(18,i)-1,nos(19,i)-1,nos(20,i)-1
+          endif  
+        enddo 
+      endif
+c ......................................................................
+c ======================================================================
+c ... tipo dos elementos
+c
+      if(bvtk)then
+        write(str1(1:15),'(i15)')numel
+        buffer = lf//'CELL_TYPES '//str1//lf
+        write(nfile) trim(buffer)
+      else
+        write(nfile,'(a,i10)') 'CELL_TYPES ',numel
+      endif
+c .......................................................................      
+c
+c ...     
+      if (nbar2(1) .gt. 0) then
+        nnoel = 3
+        do i = nbar2(2), nbar2(2) + nbar2(1)-1
+          if(bvtk)then
+            write(nfile)nnoel
+          else  
+            write(nfile,'(i3)')nnoel
+          endif  
+        enddo
+      endif
+c .......................................................................
+c
+c ...
+      if (ntria3(1) .gt. 0) then
+        nnoel = 5
+        do i = ntria3(2), ntria3(2) + ntria3(1)-1
+          if(bvtk)then
+            write(nfile)nnoel
+          else  
+            write(nfile,'(i3)')nnoel
+          endif  
+        enddo
+      endif
+c ......................................................................
+c
+c ...
+      if (nquad4(1) .gt. 0) then
+        nnoel = 9
+        do i = nquad4(2), nquad4(2) + nquad4(1)-1
+          if(bvtk)then
+            write(nfile)nnoel
+          else  
+            write(nfile,'(i3)')nnoel
+          endif  
+        enddo
+      endif
+c ......................................................................
+c
+c ...
+      if (ntetra4(1) .gt. 0) then
+        nnoel = 10
+        do i = ntetra4(2), ntetra4(2) + ntetra4(1)-1
+          if(bvtk)then
+            write(nfile)nnoel
+          else  
+            write(nfile,'(i3)') nnoel
+          endif  
+        enddo
+      endif
+c ......................................................................
+c
+c ...
+      if (nhexa8(1) .gt. 0) then
+        nnoel = 12
+        do i = nhexa8(2), nhexa8(2) + nhexa8(1)-1
+          if(bvtk)then
+            write(nfile)nnoel
+          else  
+            write(nfile,'(i3)')nnoel
+          endif  
+        enddo
+      endif
+c ......................................................................
+c
+c ...
+      if (ntetra10(1) .gt. 0) then
+        nnoel = 24
+        do i = ntetra10(2), ntetra10(2) + ntetra10(1)-1
+          if(bvtk)then
+            write(nfile)nnoel
+          else  
+            write(nfile,'(i3)')nnoel
+          endif  
+        enddo
+      endif
+c ......................................................................
+c
+c ...
+      if (nhexa20(1) .gt. 0) then
+        nnoel = 25
+        do i = nhexa20(2), nhexa20(2) + nhexa20(1)-1
+          if(bvtk)then
+            write(nfile)nnoel
+          else  
+            write(nfile,'(i3)')nnoel
+          endif  
+        enddo
+      endif
+c ......................................................................
+      return
+      end
+c ======================================================================
+c **********************************************************************
+c
+c **********************************************************************
+      subroutine elm_part_vtk(nos,numel,nen,bvtk,nfile)
+c **********************************************************************
+c * Data de criacao    : 12/10/2016                                    *
+c * Data de modificaco : 00/00/0000                                    * 
+c * ------------------------------------------------------------------ *  
+c * ELM_PART_VTK: escreve elementos nos formato vtk com os seus        *
+c * respectivos materias                                               *
+c * -------------------------------------------------------------------*
+c * Parametros de entrada:                                             *
+c * -------------------------------------------------------------------*
+c * nos(nen+1,numel)  - conetividade nodai                             *
+c * numel             - numero de elementos                            *
+c * ndm               - numeros de dimensoes                           *
+c * nen               - numero maximo de nos por elemento              *
+c * nfile             - arquivo de saida                               *
+c * nbar2             - numeros de barras                              *
+c * ntria3            - numero de triangulos                           *
+c * nquad4            - numero de quaddrilateros                       *
+c * ntetra4           - numero de tetraedros                           *
+c * nhexa8            - numero de hexaedros                            *
+c * bvtk              - true formato binary false ascii                *
+c * nfile             - numero associado ao arquivo de saida           *
+c * -------------------------------------------------------------------*
+c * Prametros de saida:                                                *
+c * -------------------------------------------------------------------*
+c * -------------------------------------------------------------------*
+c * OBS:                                                               *
+c * -------------------------------------------------------------------*
+c * Os prametors nbar2,ntria3,nquad4,ntetra4 e nhexa8 foram herdados do*
+c *   mefpar                                                           *
+c *--------------------------------------------------------------------*
+c **********************************************************************
+      implicit none
+      include 'elementos.fi'
+      integer numel,nen,nfile
+      integer nnoel
+      integer numet,nb2,nt3,nq4,nt4,nh8,nt10,nh20
+      integer i,j
+      integer nos(nen+1,*)
+      character buffer*1024,lf*1,str1*15,str2*15
+      logical bvtk
+
+      lf =char(10)
+c ======================================================================
+c
+c ... Calculo do numero de tipo de cada elemento
+      nb2  = nbar2(1)
+      nt3  = ntria3(1) 
+      nq4  = nquad4(1) 
+      nt4  = ntetra4(1)
+      nh8  = nhexa8(1)
+      nt10 = ntetra10(1)
+      nh20 = nhexa20(1)
+      numet =3*nb2 + 4*nt3 + 5*nq4 + 5*nt4 + 9*nh8 + 11*nt10
+     .      +21*nh20
+c ... elemento em overllaping      
       nt3  = ntria3(3) 
       nq4  = nquad4(3) 
       nt4  = ntetra4(3)
@@ -381,7 +651,7 @@ c ......................................................................
           else
             write(nfile,'(10i10)') nnoel,(nos(j,i)-1,j=1,8)
           endif  
-        enddo 
+        enddo  
       endif
 c ......................................................................
 c ======================================================================
@@ -539,6 +809,31 @@ c ...
       endif
 c ......................................................................
 c
+c ...
+      if (ntetra10(3) .gt. 0) then
+        nnoel = 24
+        do i = ntetra10(4), ntetra10(4) + ntetra10(3)-1
+          if(bvtk)then
+            write(nfile)nnoel
+          else  
+            write(nfile,'(i3)')nnoel
+          endif  
+        enddo
+      endif
+c ......................................................................
+c
+c ...
+      if (nhexa20(3) .gt. 0) then
+        nnoel = 25
+        do i = nhexa20(4), nhexa20(4) + nhexa20(3)-1
+          if(bvtk)then
+            write(nfile)nnoel
+          else  
+            write(nfile,'(i3)')nnoel
+          endif  
+        enddo
+      endif
+c ......................................................................
       return
       end
 c ======================================================================

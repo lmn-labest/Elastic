@@ -1,0 +1,25 @@
+// Exemplo com cargas por elemento dadas atraves da macro elmtloads
+// Exemplo similar ao caso (a) da apostila 
+// modulo de elsasticidade = 1.668d+01G MPa
+// possion                 = 0.3369
+// z                       = deslocamento prescrito (-0.1538d+00)
+config 
+memory 5000 omp_elmt false nth_elmt 2 omp_solver false nth_solver 2 reord true bvtk false
+end config
+pcg 10000 1.0d-11 diag
+mesh
+nnode      1331 numel      1000 numat  1 maxno 20 ndf 3 dim 3
+materials
+1  17  1.668d+01 0.3369d+00  
+end materials
+insert solo1_coor.dat
+insert solo1_elmt.dat
+insert solo1_boun_mec_desloc.dat
+insert solo1_mec_nodalforces_desloc.dat
+end mesh
+pgeo
+maxnlit 2
+pmecres
+solvm
+pmecres
+stop

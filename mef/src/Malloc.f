@@ -23,7 +23,7 @@ c **********************************************************************
          integer*8, external :: alloc_4,alloc_8,locate,dealloc
 c         integer*8, parameter :: maxmem =1800000000
          integer*8 maxmem
-         data maxmem /10000000/    
+         data maxmem /100000000/    
         end module
       subroutine init_malloc()
 c **********************************************************************

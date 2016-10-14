@@ -7,6 +7,6 @@ c *    line_col- ponteiro da linha lida                                *
 c *                                                                    *
 c **********************************************************************
       integer maxstrl,strl,line_col
-      parameter (maxstrl  = 200)
+      parameter (maxstrl  = 500)
       character word,line
       common /strings / strl,line_col,word(maxstrl),line(maxstrl)

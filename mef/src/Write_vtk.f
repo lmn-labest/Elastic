@@ -14,7 +14,7 @@ c * nen         - numero de nos por elementos                         *
 c * ndm         - numero de dimensoes                                 *
 c * filein      - prefix do arquivo de saida                          *
 c * bvtk        - true BINARY vtk false ASCII vtk                     *
-c * legacy      - true (formato padrão .vtk) false (formato xlm .vtu) *
+c * legacy      - true (formato padrão .vtk) false (formato xlm .vtu)*
 c * nout        - arquivo de saida                                    *
 c * ----------------------------------------------------------------- *    
 c * Parametros de saida :                                             *
@@ -66,7 +66,7 @@ c =====================================================================
 c
 c === cabecalho
       if(legacy) then
-        write(aux,'(30a)')"Malha poro mec" 
+        write(aux,'(30a)')"Geometria" 
         call head_vtk(aux,bvtk,ddum,idum,.false.,nout)
       else  
         call head_vtu(nnode,numel,bvtk,nout) 
@@ -776,7 +776,7 @@ c =====================================================================
 c
 c === cabecalho
       if(legacy) then
-        write(aux,'(30a)')'Malha poro mec' 
+        write(aux,'(30a)')'Malha Res' 
         call head_vtk(aux,bvtk,ddum,idum,.false.,nout) 
       else  
         call head_vtu(nnode,numel,bvtk,nout) 
@@ -1040,7 +1040,7 @@ c ... verifica se ha carga nas faces do elemento
 c ....................................................................
 c
 c ... Tetraedro
-        else if( ty .eq. 6  .or. ty .eq. 12) then
+        else if( ty .eq. 6  .or. ty .eq. 16) then
 c ... verifica se ha carga nas faces do elemento
           do j = 1, 4
             c = eload(j,i)
@@ -1057,7 +1057,7 @@ c ... verifica se ha carga nas faces do elemento
 c ....................................................................
 c 
 c ...  hexaedros      
-        else if(ty .eq. 7 .or. ty .eq. 13) then
+        else if(ty .eq. 7 .or. ty .eq. 17) then
 c ... verifica se ha carga nas faces do elemento
           do j = 1, 6
             c = eload(j,i)

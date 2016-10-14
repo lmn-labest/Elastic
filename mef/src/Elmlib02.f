@@ -22,11 +22,25 @@ c * estatico                                                          *
 c *                                                                   *
 c * ELMT07_MEC- hexaedros de  8 nos para o problema mecanico  elastico* 
 c * estatico                                                          *
+c *                                                                   *
 c * ------------------ Elementos quadraticos ------------------------ *
-c * ELMT12_MEC- tetraedros de 10 nos para o problema mecanico elastico*
+c *                                                                   *
+c * ELMT12_MEC- triangulo de 6 nos para o problema mecanico elastico  *
+c * estatico (Estado plano de deformacao) (NAO IMPLEMENTADO)          *
+c *                                                                   *
+c * ELMT13_MEC- triangulo de 6 nos para o problema mecanico elastico  *
+c * estatico (Estado plano de deformacao) (NAO IMPLEMENTADO)          *
+c *                                                                   *
+c * ELMT14_MEC- quadrilateros de 8 nos para o problema mecanico       * 
+c * elastico estatico (Estado plano de deformacao) (NAO IMPLEMENTADO) *
+c *                                                                   *
+c * ELMT15_MEC- quadrilateros de 8 nos para o problema mecanico       *
+c * elastico estatico (Estado plano de tensao) (NAO IMPLEMENTADO)     *
+c *                                                                   *
+c * ELMT16_MEC- tetraedros de 10 nos para o problema mecanico elastico*
 c * estatico                                                          *
 c *                                                                   *
-c * ELMT13_MEC- hexaedros de 20 nos para o problema mecanico  elastico* 
+c * ELMT17_MEC- hexaedros de 20 nos para o problema mecanico  elastico* 
 c * estatico                                                          *
 c *                                                                   *
 c * ----------------------------------------------------------------- *
@@ -1434,6 +1448,7 @@ c
 c ......................................................................
  400  continue
 c ... peso proprio
+      density   = e(3) 
       if( density .eq. 0.0d0) goto 430
       density   = e(3)*1.0d-06 
 c .....................................................................
@@ -1810,6 +1825,7 @@ c
 c ......................................................................
  400  continue
 c ... peso proprio  
+      density   = e(3) 
       if( density .eq. 0.0d0) goto 430
       density   = e(3)*1.0d-06 
 c .....................................................................
@@ -2006,12 +2022,12 @@ c ......................................................................
 c ......................................................................
       end
 c **********************************************************************
-      subroutine elmt12_mec(e,iq,x,u,p,s,txn,ndm,nst,nel,isw)
+      subroutine elmt16_mec(e,iq,x,u,p,s,txn,ndm,nst,nel,isw)
 c **********************************************************************
 c * Data de criacao    : 09/04/2016                                    *
-c * Data de modificaco : 00/00/0000                                    * 
+c * Data de modificaco : 13/10/2016                                    * 
 c * ------------------------------------------------------------------ *      
-c * ELMT12_MEC : Elemento tetraedrico de 10 nos para problemas         *  
+c * ELMT16_MEC : Elemento tetraedrico de 10 nos para problemas         *  
 c * mecanico elasticos                                                 *
 c * ------------------------------------------------------------------ * 
 c * Parametros de entrada:                                             *
@@ -2240,7 +2256,7 @@ c ...
 c .....................................................................
 c
 c ... tensao nodal total
-      do 310 i = 1, 4
+      do 310 i = 1, 10
 c       tp = (i-1)*6 + 1
         tp  = 6*i - 5
 c ... calculo do determinante
@@ -2265,6 +2281,7 @@ c
 c ......................................................................
  400  continue
 c ... peso proprio
+      density   = e(3) 
       if( density .eq. 0.0d0) goto 430
       density   = e(3)*1.0d-06 
 c .....................................................................
@@ -2418,7 +2435,7 @@ c ...
 c .....................................................................
 c  
 c ...
-        txi(1:6)= 0.d0
+        txi(1:4)= 0.d0
         do 515 j = 1,   4
           txi(1) = txi(1) + h(j)*txn(1,j)
           txi(2) = txi(2) + h(j)*txn(2,j) 
@@ -2460,12 +2477,12 @@ c ......................................................................
 c ....................................................................
       end
 c *********************************************************************
-      subroutine elmt13_mec(e,iq,x,u,p,s,txn,ndm,nst,nel,isw)
+      subroutine elmt17_mec(e,iq,x,u,p,s,txn,ndm,nst,nel,isw)
 c **********************************************************************
 c * Data de criacao    : 09/04/2016                                    *
 c * Data de modificaco : 00/00/0000                                    * 
 c * ------------------------------------------------------------------ *       
-c * ELMT013_MEC: Elemento hexaedricos de 20 nos para problemas         *  
+c * ELMT017_MEC: Elemento hexaedricos de 20 nos para problemas         *  
 c * mecanico estaico-elasticos                                         *
 c * ------------------------------------------------------------------ * 
 c * Parametros de entrada:                                             *
@@ -2702,7 +2719,7 @@ c ...
 c .....................................................................
 c
 c ... tensao nodal total
-      do 310 i = 1, 8
+      do 310 i = 1, 20
 c       tp = (i-1)*6 + 1
         tp  = 6*i - 5
 c ... calculo do terminante
@@ -2727,6 +2744,7 @@ c
 c ......................................................................
  400  continue
 c ... peso proprio
+      density   = e(3)
       if( density .eq. 0.0d0) goto 430
       density   = e(3)*1.0d-06 
 c .....................................................................

@@ -304,6 +304,58 @@ c     Soma i1's de todos os processos em i_g, no processo raiz
 c ......................................................................
       return
       end
+      subroutine global_iv(nl,ncl,i_l,i_g,name)
+c **********************************************************************
+c *                                                                    *
+c *   GLOBAL_IV  arranjo nodal inteiro global para montagem de saidas  *
+c *   ---------                                                        *
+c *                                                                    *
+c *   Parametros de entrada:                                           *
+c *   ----------------------                                           *
+c *      nl        -  número de linhas                                 *
+c *      ncl       -  número de colunas local                          *
+c *      i_l       -  ponteiro do arranjo local                        *
+c *      name      -  string com nome para alocacao do arranjo global  *
+c *                                                                    *
+c *   Parametros de saida:                                             *
+c *   -------------------                                              *
+c *      i_g  -  ponteiro do arranjo global (apenas processo 0)        *
+c *                                                                    *
+c **********************************************************************
+      use Malloc
+      implicit none
+      include 'mpif.h'
+      include 'parallel.fi'
+      integer nl,ncl
+c ... ponteiro      
+      integer*8 i_l,i_g,i1
+c ......................................................................      
+      character*8 name
+c ......................................................................
+      if (nprcs .le. 1) then
+         i_g = i_l
+         return
+      endif
+c ......................................................................
+c
+c ... Cria arranjo global
+      i_g = alloc_4(   name   , nl, nnoG)
+      i1  = alloc_4('temp    ', nl, nnoG)
+c ... Verificar com o iuri esta modificacao:
+      call  mzero  (ia(i_g),nl*nnoG)
+      call  mzero  (ia(i1) ,nl*nnoG)      
+c ----------------------------------------------------------------------      
+c
+c     Passa valores do arranjo local i_l para o arranjo global i1
+      call map_iv(ia(i_l),nl,ncl,ia(i1),ia(i_noLG))
+c
+c     Soma i1's de todos os processos em i_g, no processo raiz
+      call MPI_reduce(ia(i1),ia(i_g),nl*nnoG,MPI_INTEGER,
+     .                MPI_SUM,0,MPI_COMM_WORLD,ierr)
+      i1 = dealloc('temp    ')
+c ......................................................................
+      return
+      end
       subroutine map_v(vl,nl,ncl,vg,mapa)
 c **********************************************************************
 c *                                                                    *
@@ -326,6 +378,39 @@ c **********************************************************************
       implicit none
       integer  nl,ncl,mapa(*)
       real*8   vl(nl,*),vg(nl,*)
+      integer i,j,k
+c ......................................................................
+      do i = 1, ncl
+         k = mapa(i)
+         do j = 1, nl
+            vg(j,k) = vl(j,i)
+         enddo
+      enddo
+c ......................................................................
+      return
+      end
+      subroutine map_iv(vl,nl,ncl,vg,mapa)
+c **********************************************************************
+c *                                                                    *
+c *   MAP_IV     mapeia arranjo integer local em global                *
+c *   -----                                                            *
+c *                                                                    *
+c *   Parametros de entrada:                                           *
+c *   ----------------------                                           *
+c *      vl(nl,ncl) -  vetor local                                     *
+c *      nl         -  número de linhas                                *
+c *      ncl        -  número de colunas local                         *
+c *      ncg        -  número de colunas global                        *
+c *      mapa(ncl)  -  relacao local->global                           *
+c *                                                                    *
+c *   Parametro de saida:                                              *
+c *   ------------------                                               *
+c *      vg(nl,ncg) -  vetor global                                    *
+c *                                                                    *
+c **********************************************************************
+      implicit none
+      integer  nl,ncl,mapa(*)
+      integer  vl(nl,*),vg(nl,*)
       integer i,j,k
 c ......................................................................
       do i = 1, ncl
@@ -580,50 +665,73 @@ c ......................................................................
 c **********************************************************************
 c
 c **********************************************************************
-c *                                                                    *
-c *   init_front : inicia a estrutura do fronte                        *
-c *   ------                                                           *
-c *                                                                    *
-c *   Parametros de entrada:                                           *
-c *   ----------------------                                           *
-c *      noLG(nnode)      -  arranjo de nos local -> global            *
-c *      noGL             -  arranjo de nos global -> local            *
-c *      nno1             -  numero de nos V1                          *
-c *      nno2             -  numero de nos V2                          *
-c *      nno3             -  numero de nos V3                          *
-c *      nnofi            -  nao definido                              *
-c *      nno_pload        -  nao definino                              *
-c *      nnoG             -  nao definido                              *
-c *      nelG             -  nao definido                              *
-c *      ovlp             -  nao definido                              *
-c *      novlp            -  nao definido                              *
-c *      nprcs            -  numero de processo do Mpi                 *
-c *      nviz1            -  numeros de vizinhos recebimento           *
-c *      nviz2            -  numeros de vizinhos envio                 *
-c *      i_rreqs          -  nao definido                              *
-c *      i_rreqs          -  nao definido                              *
-c *      i_sreqs          -  nao definido                              *
-c *      i_rcvs0i         -  nao definido                              *
-c *      i_dspl0i         -  nao definido                              *
-c *      i_fmap0i         -  nao definido                              *
-c *                                                                    *
-c *   Parametro de saida:                                              *
-c *   ------------------                                               *
-c *      nno_pload        -  nnode (sem Mpi)                           *
-c *      nnoG             -  nnode (sem Mpi)                           *
-c *      nelG             -  numel (sem Mpi)                           *
-c *      ovlp             -  .false.(sem Mpi)                          *
-c *      novlp            -  .false. (sem Mpi)                         *
-c *      i_rrqes          - estrutura de comunicacao do mpi            *
-c *      i_srqes          - estrutura de comunicacao do mpi            *
-c *      i_rcvs0i         - mapa para os nos                           *
-c *      i_dspl0i         - mapa para os nos                           *
-c *      i_fmap0i         - mapa para nos                              *
-c *      nnofi            - numero de nos com comunicacao              *
-c *      mpi              - excucao em mpi                             *
+c * Data de criacao    : 00/00/0000                                    *
+c * Data de modificaco : 09/10/2016                                    *
+c * ------------------------------------------------------------------ *    
+c * init_front : inicia a estrutura do fronte                          *
+c * ------------------------------------------------------------------ *
+c * Parametros de entrada:                                             *
+c * ------------------------------------------------------------------ *
+c * noLG(nnode) -  nao definido                                        *
+c * noGL        -  nao definido                                        *
+c * nno1        -  nao definido                                        *
+c * nno2        -  nao definido                                        *
+c * nno3        -  nao definido                                        *
+c * nnofi       -  nao definido                                        *
+c * nno_pload   -  nao definino                                        *
+c * nnovG       -  nao definido                                        *
+c * nnoG        -  nao definido                                        *
+c * nelG        -  nao definido                                        *
+c * ovlp        -  nao definido                                        *
+c * novlp       -  nao definido                                        *
+c * nprcs       -  nao definido                                        *
+c * nviz1       -  nao definido                                        *
+c * nviz2       -  nao definido                                        *
+c * i_rreqs     -  nao definido                                        *
+c * i_rreqs     -  nao definido                                        *
+c * i_sreqs     -  nao definido                                        *
+c * i_rcvs0i    -  nao definido                                        *
+c * i_dspl0i    -  nao definido                                        *
+c * i_fmap0i    -  nao definido                                        *
+c * ------------------------------------------------------------------ *
+c * Parametro de saida:                                                *
+c * ------------------------------------------------------------------ *
+c * noLG(nnode) - arranjo de nos local -> global                       *
+c * noGL        - arranjo de nos global -> local                       *
+c * nno1        - numero de nos V1                                     *
+c * nno2        - numero de nos V2                                     *
+c * nno3        - numero de nos V3                                     *
+c * nnofi       - nao definido                                         *
+c * nno_pload   - nno1 + nno2                                          *
+c * nnovG       - numero global de vertices                            *
+c * nnoG        - numero global de nos                                 *
+c * nelG        - numero global de elementos                           *
+c * ovlp        - overllaping(true|false)                              *
+c * novlp       - non-overllaping(true|false)                          *
+c * nprcs       - numero de processo do Mpi                            *
+c * nviz1       - numeros de vizinhos recebimento                      *
+c * nviz2       - numeros de vizinhos envio                            *
+c * i_rrqes     - estrutura de comunicacao do mpi                      *
+c * i_srqes     - estrutura de comunicacao do mpi                      *
+c * i_rcvs0i    - mapa para os nos                                     *
+c * i_dspl0i    - mapa para os nos                                     *
+c * i_fmap0i    - mapa para nos                                        *
+c * nnofi       - numero de nos com comunicacao                        *
+c * mpi         - excucao em mpi                                       *
+c * ------------------------------------------------------------------ * 
+c * OBS:                                                               *
+c * ------------------------------------------------------------------ *
+c * nno_pload   -  nnode (sem Mpi)                                     *
+c * nnovG       -  nnodev(sem Mpi)                                     *
+c * nnoG        -  nnode (sem Mpi)                                     *
+c * nelG        -  numel (sem Mpi)                                     *
+c * ovlp        -  .false.(sem Mpi)                                    *
+c * novlp       -  .false. (sem Mpi)                                   *
+c * ------------------------------------------------------------------ * 
 c **********************************************************************
       subroutine init_front(i_noLG,i_noGL,nno1,nno2,nno3,nnofi,nno_pload
-     .                     ,nnoG,nelG,nnode,numel,ovlp,novlp,nprcs,nviz1
+     .                     ,nnovG,nnoG,nelG,nnodev,nnode
+     .                     ,numel,ovlp,novlp,nprcs,nviz1
      .                     ,nviz2,i_rreqs,i_sreqs,i_rcvs0i,i_dspl0i
      .                     ,i_fmap0i,mpi) 
 c ===     
@@ -631,10 +739,10 @@ c ===
       implicit none
       include 'mpif.h'
       integer nno1,nno2,nno3,nnofi
-      integer nno_pload,nnoG,nelG
+      integer nno_pload,nnovG,nnoG,nelG
       logical ovlp,novlp
       integer nprcs,nviz1,nviz2
-      integer nnode,numel
+      integer nnodev,nnode,numel
       logical mpi
 c ... ponteiros      
       integer*8 i_noLG,i_noGL
@@ -649,6 +757,7 @@ c
 c === sem Mpi
       if (nprcs .eq. 1) then
         nno_pload = nnode
+        nnovG     = nnodev
         nnoG      = nnode
         nelG      = numel
         ovlp      = .false.
@@ -711,49 +820,51 @@ c **********************************************************************
      .                 ,i_fmapi,i_rcvsi,i_dspli,i_xfi
      .                 ,namefmap,namercvs,namedspl,namexf,cod)
 c **********************************************************************
-c *                                                                    *
-c *   FRONTB:                                                          *
-c *   -----                                                            *
-c *       Calcula neqs por tipo de no' e                               *
-c *       Transforma o mapa Interface->Global de no's em               *
-c *       mapa Interface -> Local de equacoes                          *
-c *                                                                    *
-c *   Parâmetros de entrada:                                           *
-c *   ----------------------                                           *
-c *      ndf            - numero de graus de liberdade por no'         *
-c *      idr(ndf,nnode) - numeracao local de equacoes                  *
-c *      neqi           -                                              *
-c *      neq1i          -                                              *
-c *      neq2i          -                                              *
-c *      neq3i          -                                              *
-c *      neq4i          -                                              *
-c *      neq1ai         -                                              *
-c *      neqf1i         -                                              *
-c *      neqf2i         -                                              *
-c *      noGL(nnoG)     - mapa Global->Local de no's                   *
-c *      neq            - numero de equacoes de numeq                  *
-c *      namefmap       - nome do arranjo fmap                         *
-c *      namercvs       - nome do arranjo rcvs                         *
-c *      namedspl       - nome do arranjo dspl                         *
-c *      namexf         - nome do arranjo xf                           *
-c *      cod            - imprime o mapa em um arquivo auxiliar        *
-c *                       1 - mecanico                                 *
-c *                       2 - termico                                  *
-c *   Parâmetros de saida:                                             *
-c *   -------------------                                              *
-c *      neqi  - numero de equacoes do sistema                         *
-c *      neq1i - numero de equacoes em V1                              *
-c *      neq2i - numero de equacoes em V2                              *
-c *      neq3i - numero de equacoes em V3                              *
-c *      neq4i - numero de equacoes em V4                              *
-c *      neq1ai- numero de equacoes em V1a                             *
-c *      neqf1i- numero de equacoes recebidas na comunicacao           *
-c *      neqf2i- numero de equacoes enviadas na comunicacao            *
-c *      fmap(neqf) - correlacao neq_interface -> neq_local            *
-c *      rcvs(nprcs) - arranjo usado no allgatherv                     *
-c *      dspl(nprcs) - arranjo usado no allgatherv                     *
-c *      xf  (*    ) - buffer de comunicao                             *
-c *                                                                    *
+c * Data de criacao    : 00/00/0000                                    *
+c * Data de modificaco : 00/00/0000                                    *
+c * ------------------------------------------------------------------ *  
+c * FRONTB: Calcula neqs por tipo de noh e Transforma o mapa           *
+c * Interface->Global de noh em mapa Interface -> Local de equacoes    *                          *
+c * ------------------------------------------------------------------ * 
+c * Parâmetros de entrada:                                             *
+c * ------------------------------------------------------------------ * 
+c * ndf            - numero de graus de liberdade por no'              *
+c * idr(ndf,nnode) - numeracao local de equacoes                       *
+c * neqi           -                                                   *
+c * neq1i          -                                                   *
+c * neq2i          -                                                   *
+c * neq3i          -                                                   *
+c * neq4i          -                                                   *
+c * neq1ai         -                                                   *
+c * neqf1i         -                                                   *
+c * neqf2i         -                                                   *
+c * noGL(nnoG)     - mapa Global->Local de no's                        *
+c * neq            - numero de equacoes de numeq                       *
+c * namefmap       - nome do arranjo fmap                              *
+c * namercvs       - nome do arranjo rcvs                              *
+c * namedspl       - nome do arranjo dspl                              *
+c * namexf         - nome do arranjo xf                                *
+c * cod            - imprime o mapa em um arquivo auxiliar             *
+c *                  1 - mecanico                                      *
+c *                  2 - termico                                       *
+c * ------------------------------------------------------------------ * 
+c * Parâmetros de saida:                                               *
+c * ------------------------------------------------------------------ * 
+c * neqi  - numero de equacoes do sistema                              *
+c * neq1i - numero de equacoes em V1                                   *
+c * neq2i - numero de equacoes em V2                                   *
+c * neq3i - numero de equacoes em V3                                   *
+c * neq4i - numero de equacoes em V4                                   *
+c * neq1ai- numero de equacoes em V1a                                  *
+c * neqf1i- numero de equacoes recebidas na comunicacao                *
+c * neqf2i- numero de equacoes enviadas na comunicacao                 *
+c * fmap(neqf) - correlacao neq_interface -> neq_local                 *
+c * rcvs(nprcs) - arranjo usado no allgatherv                          *
+c * dspl(nprcs) - arranjo usado no allgatherv                          *
+c * xf  (*    ) - buffer de comunicao                                  *
+c * ------------------------------------------------------------------ * 
+c * OBS:                                                               *
+c * ------------------------------------------------------------------ *
 c **********************************************************************
       use Malloc
       implicit none
