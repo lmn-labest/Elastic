@@ -80,7 +80,7 @@ c ... abre o arquivo de logs
       if(my_id .eq.0) then
         fname = name(prename,nprcs,14)
         open(nlog, file= fname)
-        write(nlog,'(a)')"# Arquivo de log do poro mecanico"
+        if(fmec) write(nlog,'(a)')"# Arquivo de log do mecanico"
         write(nlog,'(a)')"Tempos (seg):"
         write(nlog,'(a,es10.2)') "Resolucao do tempo:", mpi_wtick() 
       endif
@@ -327,4 +327,215 @@ c
       close(nlog) 
       return
       end
-c *********************************************************************      
+c *********************************************************************
+c
+c *********************************************************************
+c * Data de criacao    : 15/10/2016                                   *
+c * Data de modificaco : 00/00/0000                                   * 
+c * ------------------------------------------------------------------*
+c * MPI_LOG_MEAN_TIME : Escrever o arquivo de log de excuacao com     *
+c * valores medios dos processos do mpi                               *
+c * ----------------------------------------------------------------- *
+c * parametros de entrada :                                           *
+c * ----------------------------------------------------------------- *
+c * nnovG     - numero de vertices (Total)                            *
+c * nnoG      - numero de nos total (Total)                           *
+c * nelG      - numero de elementos (Total)                           *
+c * omp_elmt  - flag do openmp na fase de elemento                    *
+c * nth_elmt  - numero de threads usado na fase de elemento           *
+c * omp_solv  - flag do openmp na fase do solver                      *
+c * nth_solv  - numero de threads usado do solver                     *
+c * num_colors- numero de cores usado para colorir a malha            *
+c * prename   - prefixo do nome do arquivo de saida                   *
+c * my_id     - rank do porcesso mpi                                  *
+c * nprcs     - numero de porcessos do mpi                            *
+c * nlog      - numero do arquivo de saida                            *
+c * ----------------------------------------------------------------- *
+c * parametros de saida                                               *
+c * ----------------------------------------------------------------- *
+c * ----------------------------------------------------------------- *
+c *********************************************************************
+      subroutine mpi_log_mean_time(nnovG   ,nnoG ,nelG 
+     .                         ,omp_elmt,nth_elmt,omp_solv  ,nth_solv
+     .                         ,fmec    ,num_colors,prename
+     .                         ,my_id ,nprcs      ,nlog)
+      use Malloc
+      implicit none
+      include 'time.fi'
+      include 'mpif.h'
+c ... malha
+      integer nnovG,nnoG,nelG
+c ...
+      logical fmec
+c ... mpi      
+      integer mcw,mi,mdp,ierr
+      integer my_id,nprcs
+c ... openmp
+      integer nth_elmt,nth_solv,num_colors
+      logical omp_elmt,omp_solv
+c ... variaveis de arquivos      
+      character*80 fname,name,prename
+      integer nlog
+c ...
+      real*8 use_work_vector,get_buffer_size,vmean
+      integer buf
+c ... variaveis de controle do mpi
+      mcw = MPI_COMM_WORLD
+      mi  = MPI_INTEGER
+      mdp = MPI_DOUBLE_PRECISION
+c .....................................................................
+c
+c ... abre o arquivo de logs
+      if(my_id .eq.0) then
+        fname = name(prename,nprcs,12)
+        open(nlog, file= fname)
+        if(fmec) write(nlog,'(a)')"# Arquivo de log do mecanico"
+        write(nlog,'(a)')"Tempos (seg):"
+        write(nlog,'(a,es10.2)') "Resolucao do tempo:", mpi_wtick() 
+      endif
+c .....................................................................
+c
+c ... Tempo levado na reord
+      call mpi_mean(vmean,reordtime,nprcs)
+      if (my_id.eq.0) write(nlog,'(a,f18.6)')'REORD ',vmean
+c .....................................................................
+c
+c ... Tempo levado na numeq
+      call mpi_mean(vmean,numeqtime,nprcs)
+      if (my_id.eq.0) write(nlog,'(a,f18.6)')'NUMEQ ',vmean
+c .....................................................................
+c
+c ... Tempo levado na front
+      call mpi_mean(vmean,frontime,nprcs)
+      if (my_id.eq.0) write(nlog,'(a,f18.6)')'FRONT ',vmean
+c .....................................................................
+c
+c ... Tempo levado na struc
+      call mpi_mean(vmean,dstime,nprcs)
+      if (my_id.eq.0) write(nlog,'(a,f18.6)')'STRUC ',vmean
+c .....................................................................
+c
+c ...  
+      call mpi_mean(vmean,vectime,nprcs)
+      if (my_id.eq.0) write(nlog,'(a,f18.6)')'VECTR ',vmean
+c .....................................................................
+c
+c ... Tempo levado na pform
+      call mpi_mean(vmean,elmtime,nprcs)
+      if (my_id.eq.0) write(nlog,'(a,f18.6)')'ELMT  ',vmean
+c .....................................................................
+c
+c ... Tempo levado na tform
+      call mpi_mean(vmean,tformtime,nprcs)
+      if (my_id.eq.0) write(nlog,'(a,f18.6)')'TFPRM ',vmean
+c .....................................................................
+c
+c ... Tempo levado no precondicionador
+      call mpi_mean(vmean,precondtime,nprcs)
+      if (my_id.eq.0) write(nlog,'(a,f18.6)')'PCOND ',vmean
+c .....................................................................
+c
+c ... Tempo levado no solver triagonal do solver fatorado
+      call mpi_mean(vmean,ifatsolvtime,nprcs)
+      if (my_id.eq.0) write(nlog,'(a,f18.6)')'IFSOLV',vmean
+c .....................................................................
+c
+c ... Tempo levado no solver
+      call mpi_mean(vmean,soltime,nprcs)
+      if (my_id.eq.0) write(nlog,'(a,f18.6)')'SOLVR ',vmean
+c .....................................................................
+c
+c ... Tempo levado no matvec
+      call mpi_mean(vmean,matvectime,nprcs)
+      if (my_id.eq.0) write(nlog,'(a,f18.6)')'MATVC ',vmean
+c .....................................................................
+c
+c ... Tempo levado no produto interno (dot)
+      call mpi_mean(vmean,dottime,nprcs)
+      if (my_id.eq.0) write(nlog,'(a,f18.6)')'DOT   ',vmean
+c .....................................................................
+c
+c ... Tempo levado no envia e recebimento de dados (MPI)
+      call mpi_mean(vmean,sendtime,nprcs)
+      if (my_id.eq.0) write(nlog,'(a,f18.6)')'SNDRC ',vmean
+c .....................................................................
+c
+c ... Tempo levado na geracao/atualizacao do buffer de dados
+c     rebidos e enviados (MPI)
+      call mpi_mean(vmean,ovhtime,nprcs)
+      if (my_id.eq.0) write(nlog,'(a,f18.6)')'OVERH ',vmean
+c .....................................................................
+c
+c ... Tempo levado no colormesh
+      if(omp_elmt) then
+        call mpi_mean(vmean,colortime,nprcs)
+        if (my_id.eq.0) write(nlog,'(a,f18.6)')'COLOR ',vmean
+      endif 
+c .....................................................................
+c
+c ... Tempo levado no matix partition
+      if(omp_solv) then
+        call mpi_mean(vmean,pmatrixtime,nprcs)
+        if(my_id.eq.0) write(nlog,'(a,f18.6)')'PMATRI',vmean
+      endif   
+c .....................................................................
+c
+c ... Tempo levado na escrita dos resultados
+      call mpi_mean(vmean,writetime,nprcs)
+      if(my_id.eq.0) write(nlog,'(a,f18.6)')'WRES  ',vmean
+c .....................................................................
+c
+c ... Tempo Total
+      call mpi_mean(vmean,totaltime,nprcs)
+      if(my_id.eq.0) write(nlog,'(a,f18.6)')'TOTAL ',vmean
+c .....................................................................
+c
+c ... 
+      if(my_id.eq.0) then 
+        write(nlog,'(a)')"Malha e sistema linear:"
+        write(nlog,'(a,i10)')"nnovG : ",nnovG
+        write(nlog,'(a,i10)')"nnoG  : ",nnoG
+        write(nlog,'(a,i10)')"nelG  : ",nelG
+      endif
+c .....................................................................
+c
+c
+      close(nlog) 
+      return
+      end
+c ********************************************************************** 
+c * Data de criacao    : 15/10/2016                                    *
+c * Data de modificaco : 00/00/0000                                    *
+c * ------------------------------------------------------------------ *
+c * DMEAN : Calculo de media aritimetica no MPI                        *
+c * ------------------------------------------------------------------ *
+c * parametros de entrada :                                            *
+c * ------------------------------------------------------------------ *
+c * vmean     - nao definidortices                                     *
+c * x         - valores locais                                         *
+c * n         - numero de termos                                       *
+c * ------------------------------------------------------------------ *
+c * parametros de saida                                                *
+c * ------------------------------------------------------------------ *
+c * ------------------------------------------------------------------ * 
+c * OBS:                                                               *
+c * ------------------------------------------------------------------ * 
+c **********************************************************************
+      subroutine mpi_mean(vmean,x,n)
+      implicit none
+      include 'mpif.h' 
+      real*8 x,tmp,vmean
+      integer n,i,ierr
+c .....................................................................
+      call MPI_REDUCE(x,tmp,1,MPI_DOUBLE_PRECISION,MPI_SUM,0
+     .               ,MPI_COMM_WORLD,ierr)
+c .....................................................................
+c
+c ...
+      vmean = tmp/dfloat(n)
+c .....................................................................
+c
+c ...
+      return
+      end
+c *********************************************************************

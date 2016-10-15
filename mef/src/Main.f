@@ -59,6 +59,7 @@ c
 c ... Variaveis do sistema de equacoes:
       integer neq,nad
       character*8 sia,sja,sau,sal,sad
+      logical cal_neq
 c .....................................................................
 c
 c ... precondicionador
@@ -124,7 +125,7 @@ c ... Macro-comandos disponiveis:
 c
       data nmc /40/
       data macro/'loop    ','hextotet','mesh    ','solver  ','dt      ',
-     .'pgeo    ','setprint','        ','gravity ','        ','gmres   ',
+     .'pgeo    ','setprint','calneq  ','gravity ','        ','gmres   ',
      .'        ','        ','        ','        ','        ','        ',
      .'solvm   ','pmecres ','        ','        ','        ','        ',
      .'        ','        ','maxnlit ','        ','nltol   ','        ',
@@ -196,6 +197,8 @@ c ... stge    =  1 (csr), 2 (edges), 3 (ebe), 4 (skyline)
       resid0  =  0.d0
 c ... ilib    =  1 define a biblioteca padrão ( default = mec )
       ilib    =  1
+c ... cal_neq = calcula somente o numero de equacoes
+      cal_neq = .false.
 c ... escrita dos nohs quadraticos
       print_flag(1) = .false.
 c ... desloc
@@ -425,6 +428,7 @@ c
 c ... mecanico
       if(fmec) then
         call numeq(ia(i_id),ia(i_inum),ia(i_id),nnode,ndf,neq)
+        if(cal_neq) print*,'Neq : ',neq
       endif
 c ......................................................................
       numeqtime = MPI_Wtime()-timei
@@ -499,8 +503,6 @@ c
       call coloredmesh(ia(i_ix),nnode,nnodev,numel,nenv,nen,numcolors
      .               ,i_colorg,i_elcolor)     
       colortime = MPI_Wtime()-colortime
-c     call MPI_barrier(MPI_COMM_WORLD,ierr)
-c     stop
 c ......................................................................
 c
 c ......................................................................
@@ -615,7 +617,7 @@ c .....................................................................
       goto 50
 c ----------------------------------------------------------------------
 c
-c ... Macro-comando: SETPRIN
+c ... Macro-comando: SETPRINT
 c
 c ......................................................................
   700 continue
@@ -632,7 +634,8 @@ c ... Macro-comando:
 c
 c ......................................................................
   800 continue
-      if(my_id.eq.0)print*, 'Macro      '
+      if(my_id.eq.0)print*, 'Macro  CALNEQ'
+      cal_neq = .true.
       goto 50
 c ......................................................................
 c
@@ -1217,6 +1220,7 @@ c .....................................................................
 c
 c ...
       totaltime = MPI_Wtime() - totaltime
+c .....................................................................
 c
 c ... arquivo de tempo      
       call write_log_file(nnode    ,numel   ,numel_nov,numel_ov,ndf 
@@ -1226,6 +1230,16 @@ c ... arquivo de tempo
      .                   ,omp_elmt ,nth_elmt,omp_solv ,nth_solv
      .                   ,fmec     ,numcolors,prename
      .                   ,my_id    ,nprcs   ,nout)
+c .....................................................................
+c
+c ... meida do tempo mpio  
+      if(mpi) then    
+        call mpi_log_mean_time(nnovG,nnoG,nelG
+     .                        ,omp_elmt ,nth_elmt
+     .                        ,omp_solv ,nth_solv
+     .                        ,fmec     ,numcolors,prename
+     .                        ,my_id    ,nprcs   ,nout)
+      endif
 c .....................................................................
 c
 c ... desalocando a memoria do vetor de trabalho  
