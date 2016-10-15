@@ -583,13 +583,25 @@ c
 c ... tria3ov                               
 c      
  1750 continue
+      if(my_id .eq. 0) print*,'load tria3ov ...'
+      ntria3(3) = 0
+      call elconn(ia(i_ix),nen+1,3,ntria3(3),numel,nin)
+      ntria3(4) = totnel+1
+      totnel    = totnel + ntria3(3)
+      if(my_id .eq. 0) print*,'load.'
       go to 100                  
 c ......................................................................  
 c
 c ... quad4ov                               
 c      
  1800 continue
-      go to 100                  
+      if(my_id .eq. 0) print*,'load quad4ov ...'
+      nquad4(3) = 0
+      call elconn(ia(i_ix),nen+1,4,nquad4(3),numel,nin)
+      nquad4(4) = totnel+1
+      totnel     = totnel + nquad4(3)
+      if(my_id .eq. 0) print*,'load.'
+      go to 50                                   
 c ......................................................................    
 c
 c ... tetra4ov                              
