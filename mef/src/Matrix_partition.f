@@ -9,7 +9,7 @@ c *                     coeficiente nao-nulo da linha   i             *
 c *   ja(nad)   - ja(k) informa a coluna do coeficiente que ocupa     *
 c *               a posicao k no vetor au                             *
 c *   neq       - numero de equacoes                                  *
-c *   ovlp      - overllaping( mpi)  
+c *   ovlp      - overllaping( mpi)                                   *
 c * ----------------------------------------------------------------- *
 c * parametros de saida                                               *
 c * ----------------------------------------------------------------- *
@@ -199,7 +199,7 @@ c *********************************************************************
       include 'openmp.fi'
       integer ia(*),ja(*),neq,h,i
 c
-c$omp parallel private(h)
+c$omp parallel private(h) num_threads(nth_solv) 
 !$    thread_id = omp_get_thread_num()
       h = thread_begin(thread_id+1)
       do i = thread_begin(thread_id+1), thread_end(thread_id+1)
@@ -320,7 +320,7 @@ c *********************************************************************
       integer ia(*),ja(*),iapu(*),japu(*)
       integer h,i,nequ
 c
-c$omp parallel private(h)
+c$omp parallel private(h) num_threads(nth_solv) 
 !$    thread_id = omp_get_thread_num()
 c ... kuu e kpp
       h = thread_begin(thread_id+1)

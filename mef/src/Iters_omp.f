@@ -15,15 +15,16 @@ c *                                                                   *
 c * ----------------------------------------------------------------- *
 c ********************************************************************* 
       subroutine pcg_omp(neq   ,nad ,ia ,ja
-     .                  ,ad    ,au  ,al ,m  ,b    ,x     
-     .                  ,z     ,r   ,p  ,tol,maxit
+     .                  ,ad    ,au  ,al ,m  ,b    
+     .                  ,x     ,z   ,r  ,p 
+     .                  ,tol   ,maxit
      .                  ,matvec,dot
      .                  ,my_id ,neqf1i ,neqf2i ,neq_doti,i_fmapi
      .                  ,i_xfi ,i_rcvsi,i_dspli,thread_y
-     .                  ,fprint,flog   ,fnew)
+     .                  ,fprint,flog   ,fnew,mpi)
 c **********************************************************************
 c * Data de criacao    : 00/00/0000                                    *
-c * Data de modificaco : 25/04/2016                                    * 
+c * Data de modificaco : 14/10/2016                                    * 
 c * ------------------------------------------------------------------ *   
 c * PCG_OMP : Solucao de sistemas de equacoes pelo metodo dos          *
 c * gradientes conjugados com precondicionador diagonal para matrizes  *
@@ -62,6 +63,7 @@ c * fprint   - saida na tela                                           *
 c * flog     - log do arquivo de saida                                 *
 c * fnew     - .true.  -> x0 igual a zero                              *
 c *            .false. -> x0 dado                                      *
+c * mpi      - true|false                                              * 
 c * ------------------------------------------------------------------ * 
 c * Parametros de saida:                                               *
 c * ------------------------------------------------------------------ *
@@ -88,10 +90,11 @@ c ......................................................................
       integer ia(*),ja(*),my_id
       real*8  ad(*),au(*),al(*),b(*),m(*),x(*)
       real*8  r(*),z(*),p(*)
-      real*8  dot,tol,conv,xkx,norm,d,di,alpha,beta,tmp
+      real*8  dot,tol,conv,xkx,norm,norm_r,norm_m_r,norm_b
+      real*8   d,di,alpha,beta,tmp
       real*8  time0,time
       real*8  thread_y(*)
-      logical flog,fprint,fnew
+      logical flog,fprint,fnew,mpi
       external matvec,dot
 c ======================================================================
       time0 = MPI_Wtime()
@@ -106,10 +109,11 @@ c ...
    5  continue
 c ......................................................................
 c$omp parallel default(none) 
-c$omp.private(i,j,jj,xkx,norm,d,di,conv,alpha,beta,tmp)
+c$omp.private(i,j,jj,xkx,norm,norm_r,norm_m_r,norm_b)
+c$omp.private(d,di,conv,alpha,beta,tmp)
 c$omp.shared(neq,nad,ia,ja,al,ad,au,b,x,m,z,r,p,tol,maxit,thread_y)
 c$omp.shared(neqf1i,neqf2i,i_fmapi,i_xfi,i_rcvsi,i_dspli,neq_doti)
-c$omp.shared(flog,fprint,fnew,my_id,time,time0)
+c$omp.shared(flog,fprint,fnew,my_id,time,time0,mpi)
 c$omp.num_threads(nth_solv)                                          
 c ......................................................................
 c
@@ -130,8 +134,9 @@ c$omp do
          z(i) = b(i) * m(i)
    15 continue
 c$omp end do
-      d    = dot(z,z,neq_doti)
-      conv = tol*dsqrt(dabs(d))
+      d      = dot(b,z,neq_doti)
+      norm_b = dsqrt(dabs(d))  
+      conv   = tol*dsqrt(dabs(d))
 c .......................................................................
 c
 c ... Ax0
@@ -200,9 +205,9 @@ c ...
          if (dsqrt(dabs(d)) .lt. conv) goto 300
 c ......................................................................
 c$omp master
-         if( jj .eq.500) then
+         if( jj .eq.1000) then
            jj = 0
-           write(*,1300),j,dsqrt(dabs(d)),conv 
+           if(my_id .eq.0) write(*,1300),j,dsqrt(dabs(d)),conv 
          endif  
          jj = jj + 1
 c$omp end master
@@ -232,14 +237,17 @@ c ... r = b - Ax (calculo do residuo explicito)
 c$omp do
       do 310 i = 1, neq
         r(i) = b(i) - z(i)
+        z(i) = r(i)*m(i)
   310 continue
 c$omp end do
-      tmp  = dot(r,r,neq_doti)
-      tmp = dsqrt(tmp)
+      norm_m_r = dot(r,z,neq_doti)
+      norm_m_r = dsqrt(dabs(norm_m_r))
+      norm_r   = dot(r,r,neq_doti)
+      norm_r   = dsqrt(norm_r)
 c$omp single
-      if( tmp .gt. 3.16d0*conv ) then
+      if(  norm_m_r .gt. 3.16d0*conv ) then
          if(my_id .eq.0 )then
-           write(*,1400) tmp,conv
+           write(*,1400)  norm_m_r,conv
          endif 
       endif
 c$omp end single
@@ -250,7 +258,11 @@ c ......................................................................
       time = time-time0
 c ......................................................................
       if(my_id .eq.0 .and. fprint )then
-        write(*,1100)tol,conv,neq,nad,j,xkx,norm,time
+        if(mpi) then
+          write(*,1110)tol,conv,j,xkx,norm,norm_r,norm_m_r,time
+        else
+          write(*,1100)tol,conv,neq,nad,j,xkx,norm,norm_r,norm_m_r,time
+        endif
       endif
 c ......................................................................
 c
@@ -278,13 +290,27 @@ c ======================================================================
      . 5x,'Number of iterations = ',i20/
      . 5x,'x * Kx               = ',d20.10/
      . 5x,'|| x ||              = ',d20.10/
+     . 5x,'|| b - Ax ||         = ',d20.10/
+     . 5x,'|| b - Ax ||m        = ',d20.10/
+     . 5x,'CPU time (s)         = ',f20.2/)
+1110  format(' (PCG_OMP_MPI) solver:'/
+     . 5x,'Solver tol           = ',d20.6/
+     . 5x,'tol * ||b||m         = ',d20.6/
+     . 5x,'Number of iterations = ',i20/
+     . 5x,'x * Kx               = ',d20.10/
+     . 5x,'|| x ||              = ',d20.10/
+     . 5x,'|| b - Ax ||         = ',d20.10/
+     . 5x,'|| b - Ax ||m        = ',d20.10/
      . 5x,'CPU time (s)         = ',f20.2/)
  1200 format (' *** WARNING: No convergence reached after ',i9,
      .        ' iterations !',/)
  1300 format (' PCG_OMP:',5x,'It',i7,5x,2d20.10)
-1400  format (' PCG:',1x,'Residuo exato > 3.16d0*conv '
+ 1400 format (' PCG_OMP:',1x,'Explicit residual > tol * ||b||| :'
      .       ,1x,d20.10,1x,d20.10)
+ 1500 format ( 'PCG_OMP: ',5x,i7,5x,2es20.10)
       end
+c **********************************************************************
+c
 c **********************************************************************
       subroutine gmres_omp(neq    ,nequ ,nad,ia ,ja
      .                    ,ad     ,au   ,al ,m  ,b

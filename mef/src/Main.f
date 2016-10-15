@@ -39,7 +39,7 @@ c
 c ... arquivo de impressao nos nos ( pu,stress,stressE,stressB,flux,...)  
       integer nfiles,ifiles
       parameter ( nfiles = 5)
-      logical new_file(nfiles),flag_pnd,print_quad
+      logical new_file(nfiles),flag_pnd,print_flag(10)
 c .....................................................................
 c
 c ... Variaveis de controle de solucao:
@@ -92,10 +92,6 @@ c ... Ponteiros:
       integer*8 i_colorg,i_elcolor    
 c ......................................................................
 c
-c ...
-      real*8 smachn
-c ......................................................................
-c
 c ... Ponteiros:
 c
 c ... malha
@@ -127,9 +123,9 @@ c
 c ... Macro-comandos disponiveis:
 c
       data nmc /40/
-      data macro/'loop    ','hextotet','mesh    ','        ','dt      ',
-     .'pgeo    ','        ','        ','gravity ','        ','gmres   ',
-     .'        ','        ','bicgstab','pcg     ','        ','        ',
+      data macro/'loop    ','hextotet','mesh    ','solver  ','dt      ',
+     .'pgeo    ','setprint','        ','gravity ','        ','gmres   ',
+     .'        ','        ','        ','        ','        ','        ',
      .'solvm   ','pmecres ','        ','        ','        ','        ',
      .'        ','        ','maxnlit ','        ','nltol   ','        ',
      .'        ','        ','setpnode','        ','        ','pnu     ',
@@ -200,8 +196,12 @@ c ... stge    =  1 (csr), 2 (edges), 3 (ebe), 4 (skyline)
       resid0  =  0.d0
 c ... ilib    =  1 define a biblioteca padrão ( default = mec )
       ilib    =  1
-c ... print_quad = escrita dos nohs quadraticos
-      print_quad = .true.
+c ... escrita dos nohs quadraticos
+      print_flag(1) = .false.
+c ... desloc
+      print_flag(2) = .true.
+c ... stress
+      print_flag(3) = .false.
 c ... campo gravitacional (Padrao)
       gravity(1)  =   0.0d0
       gravity(2)  =   0.0d0
@@ -302,7 +302,7 @@ c ......................................................................
       goto (100,200,300,400,500,600,700,800,900,1000,1100,1200,1300,
      .     1400,1500,1600,1700,1800,1900,2000,2100,2200,2300,2400,2500,
      .     2600,2700,2800,2900,3000,3100,3200,3300,3400,3500,3600,3700,
-     ,     3800,3900,5000) j
+     .     3800,3900,5000) j
 c ......................................................................
 c
 c ... Execucao dos macro-comandos:
@@ -367,7 +367,7 @@ c
      .         ,i_ie      ,i_inum  ,i_e        ,i_x
      .         ,i_id      ,i_nload ,i_eload    ,i_f  
      .         ,i_u       ,i_tx0   ,i_fnno
-     .         ,fstress0  ,fmec    ,print_quad ,nin ) 
+     .         ,fstress0  ,fmec    ,print_flag(1) ,nin ) 
 c
 c    -----------------------------------------------------------------
 c    |  ix  | id | ie | nload | eload | inum | e | x | f | u | tx0 |
@@ -499,6 +499,8 @@ c
       call coloredmesh(ia(i_ix),nnode,nnodev,numel,nenv,nen,numcolors
      .               ,i_colorg,i_elcolor)     
       colortime = MPI_Wtime()-colortime
+c     call MPI_barrier(MPI_COMM_WORLD,ierr)
+c     stop
 c ......................................................................
 c
 c ......................................................................
@@ -534,11 +536,16 @@ c ......................................................................
       goto 50
 c ----------------------------------------------------------------------
 c
-c ... Macro-comando :
+c ... Macro-comando : Solver
 c
 c ......................................................................
   400 continue
-      if(my_id.eq.0)print*, 'Macro '
+      if(my_id.eq.0)print*, 'Macro SOLVER'
+      if(flag_macro_mesh) then
+        print*,'Macro so pode ser utilizada antes da macro mesh'
+        goto 5000
+      endif
+      call read_solver_config(solver,solvtol,maxit,precond,nin,my_id)
       goto 50
 c ----------------------------------------------------------------------
 c
@@ -564,7 +571,7 @@ c ...
       ntn   = 6
 c ...
       print_nnode = nnovG   
-      if(print_quad) print_nnode = nnoG
+      if(print_flag(1)) print_nnode = nnoG
 c ......................................................................
 c
 c ... Geometria:
@@ -608,10 +615,16 @@ c .....................................................................
       goto 50
 c ----------------------------------------------------------------------
 c
-c ... Macro-comando: 
+c ... Macro-comando: SETPRIN
 c
 c ......................................................................
   700 continue
+      if(my_id.eq.0) print*, 'Macro SETPRINT'
+      if(flag_macro_mesh) then
+        print*,'Macro so pode ser utilizada antes da macro mesh'
+        goto 5000
+      endif
+      call set_print_vtk(print_flag,my_id,nin)      
       goto 50
 c ----------------------------------------------------------------------
 c
@@ -663,49 +676,12 @@ c ......................................................................
       goto 50
 c ......................................................................
 c
-c ... Macro-comando: GMRES 
+c ... Macro-comando:  
 c
 c ......................................................................
  1100 continue
-      if(my_id.eq.0)print*, 'Macro GMRES'
-      solver = 2       
-c ... numero de base de krylov
-      call readmacro(nin,.false.)
-      write(string,'(30a)') (word(i),i=1,30)
-      read(string,*,err =1101,end =1101) ngram    
-      if(my_id.eq.0) then
-        write(*,'(1x,a25,1x,i10)')'Krylov subspace:',ngram
-      endif
-c ......................................................................
-c
-c ... numero maximo de iteracoes
-      call readmacro(nin,.false.)
-      write(string,'(30a)') (word(i),i=1,30)
-      read(string,*,err =1102,end =1102) maxit    
-      if(my_id.eq.0) then
-        write(*,'(1x,a25,1x,i10)')'Set max it solver for:',maxit
-      endif
-c ......................................................................
-c
-c ... tolerancia 
-      call readmacro(nin,.false.)
-      write(string,'(30a)') (word(i),i=1,30)
-      read(string,*,err =1103,end =1103) solvtol   
-      if( solvtol .eq. 0.d0) solvtol = smachn()
-      if(my_id.eq.0) then
-        write(*,'(1x,a25,1x,e10.3)')'Set solver tol for:', solvtol  
-      endif
-c ......................................................................
+      if(my_id.eq.0)print*, 'Macro      '
       goto 50
- 1101 continue
-      print*,'Erro na leitura da macro (GMRES) ngram !'
-      goto 5000
- 1102 continue
-      print*,'Erro na leitura da macro (GMRES) maxit !'
-      goto 5000
- 1103 continue
-      print*,'Erro na leitura da macro (GMRES) solvtol !'
-      goto 5000
 c ......................................................................
 c
 c ... Macro-comando: 
@@ -728,40 +704,7 @@ c ... Macro-comando: BICGSTAB
 c
 c ......................................................................
  1400 continue
-      if(my_id.eq.0)print*, 'Macro BICGSTAB'
-      solver = 4 
-c ... numero maximo de iteracoes
-      call readmacro(nin,.false.)
-      write(string,'(30a)') (word(i),i=1,30)
-      read(string,*,err =1402,end =1402) maxit    
-      if(my_id.eq.0) then
-        write(*,'(1x,a25,1x,i10)')'Set max it solver for:',maxit
-      endif
-c ......................................................................
-c
-c ... tolerancia 
-      call readmacro(nin,.false.)
-      write(string,'(30a)') (word(i),i=1,30)
-      read(string,*,err =1403,end =1403) solvtol   
-      if( solvtol .eq. 0.d0) solvtol = smachn()
-      if(my_id.eq.0) then
-        write(*,'(1x,a25,1x,e10.3)')'Set solver tol for:', solvtol  
-      endif
-c ......................................................................
-c
-c ... precondicionador
-      call readmacro(nin,.false.)
-      write(string,'(6a)') (word(i),i=1,6)
-      call set_precond(word,precond,nin,my_id)  
-c ......................................................................
-      goto 50
- 1402 continue
-      print*,'Erro na leitura da macro (BICGSTAB) maxit !'
-      goto 5000
- 1403 continue
-      print*,'Erro na leitura da macro (BICGSTAB) solvtol !'
-      goto 5000
-c ----------------------------------------------------------------------
+      if(my_id.eq.0)print*, 'Macro '
       goto 50
 c ----------------------------------------------------------------------
 c
@@ -769,40 +712,6 @@ c ... Macro-comando: PCG
 c
 c ......................................................................
  1500 continue
-      if(my_id.eq.0)print*,'Macro PCG'
-      solver = 1       
-c ... numero maximo de iteracoes
-      call readmacro(nin,.false.)
-      write(string,'(30a)') (word(i),i=1,30)
-      read(string,*,err =1502,end =1502) maxit    
-      if(my_id.eq.0) then
-        write(*,'(1x,a25,1x,i10)')'Set max it solver for:',maxit
-      endif
-c ......................................................................
-c
-c ... tolerancia 
-      call readmacro(nin,.false.)
-      write(string,'(30a)') (word(i),i=1,30)
-      read(string,*,err =1503,end =1503) solvtol  
-      if( solvtol .eq. 0.d0) solvtol = smachn() 
-      if(my_id.eq.0) then
-        write(*,'(1x,a25,1x,e10.3)')'Set solver tol for:', solvtol  
-      endif     
-c ......................................................................
-c
-c ... precondicionador
-      call readmacro(nin,.false.)
-      write(string,'(6a)') (word(i),i=1,6)
-      call set_precond(word,precond,nin,my_id)  
-c ......................................................................
-      goto 50
- 1502 continue
-      print*,'Erro na leitura da macro (PCG) maxit !'
-      goto 5000
- 1503 continue
-      print*,'Erro na leitura da macro (PCG) solvtol !'
-      goto 5000
-c ----------------------------------------------------------------------
       goto 50 
 c ----------------------------------------------------------------------
 c
@@ -962,6 +871,10 @@ c
 c ......................................................................
  1900 continue
       if(my_id.eq.0)print*,'Macro PMECRES'
+c ... print_flag (true| false)
+c     2 - desloc
+c     3 - stress
+c
 c ... numero do tensor de tensoes
 c ... | sxx syy szz sxy  0 0 0|
       if( ndm .eq. 2) then
@@ -973,36 +886,41 @@ c ... | sxx syy szz  sxy syz sxz |
 c ......................................................................
 c
 c ... 
+      i_tx = 1
+      i_g3 = 1
       if(mpi) then
 c ... comunicao
         call global_v(ndf   ,nno_pload,i_u   ,i_g ,'dispG   ')
         call global_ix(nen+1,numel_nov,i_ix  ,i_g1,'ixG     ')
         call global_v(ndm   ,nno_pload,i_x   ,i_g2,'xG      ')
-        call global_v(ntn   ,nno_pload,i_tx0 ,i_g3,'tx0G    ')
-        call global_iv(1    ,nno_pload,i_fnno,i_g4,'fnnoG   ')
+        if(print_flag(3)) then
+          call global_v(ntn   ,nno_pload,i_tx0 ,i_g3,'tx0G    ')
+        endif
 c ......................................................................
 c
 c
 c ...
         if(my_id.eq.0) then
 c ...
-          i_tx  = alloc_8('tx      ',  ntn,print_nnode)
-          i_ic  = alloc_4('ic      ',    1,print_nnode)
-          call azero(ia(i_tx)    ,print_nnode*ntn)
-          call mzero(ia(i_ic)    ,print_nnode)
+          if(print_flag(3)) then
+            i_tx  = alloc_8('tx      ',  ntn,print_nnode)
+            i_ic  = alloc_4('ic      ',    1,print_nnode)
+            call azero(ia(i_tx)    ,print_nnode*ntn)
+            call mzero(ia(i_ic)    ,print_nnode)
 c .....................................................................
 c
 c ...
-          timei = MPI_Wtime()
-          call tform_mec(ia(i_g1) ,ia(i_g2),ia(i_e)   ,ia(i_ie)
-     .                 ,ia(i_ic)  ,ia(i_xl),ia(i_ul) 
-     .                 ,ia(i_txnl),ia(i_g) ,ia(i_g3),ia(i_tx) 
-     .                 ,ia(i_g4) 
-     .                 ,nnovG     ,nnoG
-     .                 ,nelG      ,nenv      ,nen
-     .                 ,ndm       ,ndf       ,nst  ,ntn
-     .                 ,3         ,print_quad,ilib)
-          tformtime = tformtime + MPI_Wtime()-timei
+            timei = MPI_Wtime()
+            call tform_mec(ia(i_g1) ,ia(i_g2),ia(i_e)   ,ia(i_ie)
+     .                   ,ia(i_ic)  ,ia(i_xl),ia(i_ul) 
+     .                   ,ia(i_txnl),ia(i_g) ,ia(i_g3),ia(i_tx) 
+     .                   ,nnovG     ,nnoG
+     .                   ,nelG      ,nenv      ,nen
+     .                   ,ndm       ,ndf       ,nst  ,ntn
+     .                   ,3         ,print_flag(1),ilib)
+            tformtime = tformtime + MPI_Wtime()-timei
+c ......................................................................
+          endif
 c ......................................................................
 c
 c ...
@@ -1010,19 +928,22 @@ c ...
           call write_mesh_res_mec(ia(i_g1) ,ia(i_g2) ,ia(i_g),ia(i_tx)
      .                         ,print_nnode,nelG
      .                         ,nen        ,ndm      ,ndf   ,ntn
-     .                         ,fname      ,.false.,.true.  ,nplot)
+     .                         ,fname      ,.false.,.true.  ,print_flag
+     .                         ,nplot)
           close(nplot)  
 c ......................................................................
 c
 c ...
-          i_ic  = dealloc('ic      ')
-          i_tx  = dealloc('tx      ')
+          if(print_flag(3)) then
+            i_ic  = dealloc('ic      ')
+            i_tx  = dealloc('tx      ')
+          endif
+c ......................................................................
         endif
 c ......................................................................
 c
 c ...
-        i_g4  = dealloc('fnnoG   ')
-        i_g3  = dealloc('tx0G    ')
+        if(print_flag(3)) i_g3  = dealloc('tx0G    ')
         i_g2  = dealloc('xG      ')
         i_g1  = dealloc('ixG     ')
         i_g   = dealloc('dispG   ')
@@ -1031,23 +952,26 @@ c
 c ...
       else
 c ...
-        i_tx  = alloc_8('tx      ',  ntn,print_nnode)
-        i_ic  = alloc_4('ic      ',    1,print_nnode)
-        call azero(ia(i_tx)    ,print_nnode*ntn)
-        call azero(ia(i_ic)    ,print_nnode)
+        if(print_flag(3)) then
+          i_tx  = alloc_8('tx      ',  ntn,print_nnode)
+          i_ic  = alloc_4('ic      ',    1,print_nnode)
+          call azero(ia(i_tx)    ,print_nnode*ntn)
+          call azero(ia(i_ic)    ,print_nnode)
 c .....................................................................
 c
 c ...
-        timei = MPI_Wtime()
-        call tform_mec(ia(i_ix) ,ia(i_x)  ,ia(i_e)  ,ia(i_ie)
-     .               ,ia(i_ic)  ,ia(i_xl) ,ia(i_ul) 
-     .               ,ia(i_txnl),ia(i_u)  ,ia(i_tx0),ia(i_tx) 
-     .               ,ia(i_fnno) 
-     .               ,nnodev    ,nnode  
-     .               ,numel     ,nenv      ,nen
-     .               ,ndm       ,ndf       ,nst       ,ntn
-     .               ,3         ,print_quad,ilib)
-        tformtime = tformtime + MPI_Wtime()-timei
+         
+          timei = MPI_Wtime()
+          call tform_mec(ia(i_ix) ,ia(i_x)  ,ia(i_e)  ,ia(i_ie)
+     .                  ,ia(i_ic)  ,ia(i_xl) ,ia(i_ul) 
+     .                  ,ia(i_txnl),ia(i_u)  ,ia(i_tx0),ia(i_tx) 
+     .                  ,nnodev    ,nnode  
+     .                  ,numel     ,nenv      ,nen
+     .                  ,ndm       ,ndf       ,nst       ,ntn
+     .                  ,3         ,print_flag(1),ilib)
+          tformtime = tformtime + MPI_Wtime()-timei
+c ......................................................................
+        endif
 c ......................................................................
 c
 c ...
@@ -1055,13 +979,16 @@ c ...
         call write_mesh_res_mec(ia(i_ix) ,ia(i_x)  ,ia(i_u),ia(i_tx)
      .                       ,print_nnode,numel
      .                       ,nen        ,ndm      ,ndf   ,ntn
-     .                       ,fname      ,.false.,.true.  ,nplot)
+     .                       ,fname      ,.false.,.true.  ,print_flag
+     .                       ,nplot)
         close(nplot)  
 c ......................................................................
 c
 c ...
-        i_ic  = dealloc('ic      ')
-        i_tx  = dealloc('tx      ')
+        if(print_flag(3)) then
+          i_ic  = dealloc('ic      ')
+          i_tx  = dealloc('tx      ')
+        endif
 c ......................................................................
       endif
 c ......................................................................
@@ -1249,7 +1176,7 @@ c ... Macro-comando: CONFIG
 c
 c ......................................................................
  3700 continue
-      print*, 'Macro CONFIG    '
+      if(my_id) print*, 'Macro CONFIG    '
       if(flag_macro_mesh) then
         print*,'Macro so pode ser utilizada antes da macro mesh'
         goto 5000
@@ -1262,34 +1189,18 @@ c ......................................................................
       goto 50
 c ----------------------------------------------------------------------
 c
-c ... Macro-comando: Set maxit solver
+c ... Macro-comando: 
 c
 c ......................................................................
  3800 continue
-      if(my_id.eq.0)print*, 'Macro MAXIT '
-      call readmacro(nin,.false.)
-      write(string,'(30a)') (word(i),i=1,30)
-      read(string,*,err =3910,end =3910) maxit
-      write(*,'(a,i10)')' Set max it solver for ',maxit
       goto 50
- 3810 continue
-      print*,'Erro na leitura da macro (MAXIT) !'
-      goto 5000
 c ----------------------------------------------------------------------
 c
-c ... Macro-comando: Set Solver Tol
+c ... Macro-comando: 
 c
 c ......................................................................
  3900 continue
-      if(my_id.eq.0)print*, 'Macro SOLVTOL'
-      call readmacro(nin,.false.)
-      write(string,'(30a)') (word(i),i=1,30)
-      read(string,*,err =3910,end =3910) solvtol
-      write(*,'(a,d10.2)')' Set solver tol for ',solvtol
       goto 50
- 3910 continue
-      print*,'Erro na leitura da macro (SOLVTOL) !'
-      goto 5000
 c ----------------------------------------------------------------------
 c
 c ... Macro-comando STOP:

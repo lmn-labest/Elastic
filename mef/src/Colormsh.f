@@ -31,17 +31,18 @@ c ----------------------------------------------------------------------
 c  Implementation of nodegrade
 c ----------------------------------------------------------------------
       if (omp_elmt) then
-c ...  Multicore finite element assembling:
+c ...  Multicore finite element assembling:        
         i_icolor = alloc_4('icolor  ',1,numel) 
-        i_nincid = alloc_4('nincid  ',1,nnodev) 
+        i_nincid = alloc_4('nincid  ',1,nnode) 
 c ... Compute the maxgrade of the mesh and element incidences:
-        call nodegrade(ix,nnodev,numel,nenv,nen,ia(i_nincid),maxgrade) 
+        call nodegrade(ix,nnode,numel,nen,nen,ia(i_nincid),maxgrade) 
         i_incid  = alloc_4('incid   ',maxgrade,nnode)
-        call elmincid(ix,ia(i_incid),ia(i_nincid),nnodev,numel,nenv,nen,
-     .                maxgrade)
+        call elmincid(ix,ia(i_incid),ia(i_nincid),nnode,numel,nen,nen,
+     .                maxgrade)        
 c ... Mesh coloring:
-        call colormsh(ix,ia(i_nincid),ia(i_incid),ia(i_icolor),nnodev,
-     .                numel,nenv,nen,maxgrade,numcolors)
+        call colormsh(ix,ia(i_nincid),ia(i_incid),ia(i_icolor),nnode,
+     .                numel,nen,nen,maxgrade,numcolors)
+c       print*,numel,nnodev,maxgrade,nenv,nen,numcolors
         print *, 'Number of colors used : ', numcolors
         i_incid   = dealloc('incid   ')
         i_nincid  = dealloc('nincid  ')
@@ -68,7 +69,7 @@ c *                                                                    *
 c * PURPOSE:    determine the maxgrade of a given mesh                 *
 c *                                                                    *
 c **********************************************************************
-      subroutine nodegrade(ix,nnodev,numel,nenv,nen,nincid,maxgrade)
+      subroutine nodegrade(ix,nnode,numel,nenv,nen,nincid,maxgrade)
 c ----------------------------------------------------------------------     
 c   Variable declarations
 c ----------------------------------------------------------------------
@@ -76,7 +77,7 @@ c ----------------------------------------------------------------------
 c 
 c ... Parameters:
 c 
-      integer nnodev,numel,nenv,nen,maxgrade
+      integer nnode,numel,nenv,nen,maxgrade
       integer ix(nen+1,*),nincid(*)
 c
 c ... Local variables:
@@ -87,7 +88,7 @@ c  Implementation of nodegrade
 c ----------------------------------------------------------------------
       maxgrade = 0
       grade    = 0
-      do i = 1, nnodev
+      do i = 1, nnode
         nincid(i) = 0
       enddo
 c ... Count the grade of a node:
@@ -97,7 +98,6 @@ c ... Count the grade of a node:
           if(node .gt. 0)then
             nincid(node) = nincid(node) + 1 
             grade = nincid(node)
-c         print *, 'grade - node : ', grade, node 
 c ... Checking if the computed grade is the highest grade:
             if (grade .gt. maxgrade) maxgrade = grade
           endif  
@@ -112,7 +112,7 @@ c *                                                                    *
 c * PURPOSE   : determines all incident elements of a node             *
 c *                                                                    *
 c **********************************************************************
-      subroutine elmincid(ix,incid,nincid,nnodev,numel,nenv,nen
+      subroutine elmincid(ix,incid,nincid,nnode,numel,nenv,nen
      .                   ,maxgrade)
 c ---------------------------------------------------------------------
 c  Variables
@@ -121,7 +121,7 @@ c ---------------------------------------------------------------------
 c
 c ... Parameters:
 c
-      integer nnodev,numel,nenv,nen,maxgrade
+      integer nnode,numel,nenv,nen,maxgrade
       integer ix(nen+1,*),incid(maxgrade,*),nincid(*)
 c
 c ... Local variables:
@@ -131,7 +131,7 @@ c ----------------------------------------------------------------------
 c  Implementation of elmincid
 c ----------------------------------------------------------------------
 c ... Initializing all elements of nincid:
-      do i = 1, nnodev
+      do i = 1, nnode
         nincid(i) = 0
       enddo
 c ----------------------------------------------------------------------
@@ -157,7 +157,7 @@ c *                                                                    *
 c * PURPOSE   :                                                        *
 c *                                                                    *
 c **********************************************************************
-      subroutine colormsh(ix,nincid,incid,icolor,nnodev,numel,nenv,nen 
+      subroutine colormsh(ix,nincid,incid,icolor,nnode,numel,nenv,nen 
      .                   ,maxgrade,numcolors)
 c ----------------------------------------------------------------------
 c  Variables
@@ -167,7 +167,7 @@ c ----------------------------------------------------------------------
 c
 c ... Parameters:
 c
-      integer nnodev,numel,nenv,nen,maxgrade,numcolors
+      integer nnode,numel,nenv,nen,maxgrade,numcolors
       integer ix(nen+1,*),incid(maxgrade,*),nincid(*),icolor(*)
 c
 c ... Local variables
@@ -187,39 +187,49 @@ c  Coloring loop (icolor(i) = color of ith element)
 c ----------------------------------------------------------------------
       quit = .false.
       do i = 1, maxcolors
-        do node = 1, nnodev
+        do node = 1, nnode
           found = .false.
           l = nincid(node)
-c ----------------------------------------------------------------------
+c .....................................................................
           do m = 1, l
             ik = incid(m,node)
             if (icolor(ik) .eq. i) found = .true.
           enddo
-c ----------------------------------------------------------------------
+c .....................................................................
+c
+c ...
           if (found .eqv. .false. ) then
             ielfirst = 0
             do m = 1, l
               ik = incid(m,node)
               if (icolor(ik) .eq. 0) ielfirst = ik
-            enddo
-              if (ielfirst .ne. 0) then
-                icolor(ielfirst) = i
-c ----------------------------------------------------------------------
+            enddo  
+c ...
+            if (ielfirst .ne. 0) then
+              icolor(ielfirst) = i
+c .....................................................................
+c
 c ... must check !
-                do j = 1, nenv
-                  ixj = ix(j,ielfirst)
-                  if (ixj .gt. 0) then
-                    do k = 1, nincid(ixj)
-                      ik = incid(k,ixj)
-                      ielk = ik
-                      if (icolor(ielk) .eq. 0) icolor(ielk) = -1
-                    enddo
-                  endif
-                enddo
-c ----------------------------------------------------------------------
-              endif
+              do j = 1, nenv
+                ixj = ix(j,ielfirst)
+                if (ixj .gt. 0) then
+                  do k = 1, nincid(ixj)
+                    ik = incid(k,ixj)
+                    ielk = ik
+                    if (icolor(ielk) .eq. 0) icolor(ielk) = -1
+                  enddo
+                endif
+              enddo
+c .....................................................................
             endif
-          enddo
+c .....................................................................
+          endif
+c .....................................................................
+        enddo
+c .....................................................................
+c
+c ... 
+   10   continue 
         quit = .true. 
         do n = 1, numel
           if (icolor(n) .eq. -1) then

@@ -1477,7 +1477,7 @@ c ... nenhum precondicionador
       if( string .eq. macros(1)) then
         precond = 1
         if(my_id.eq.0) then
-          write(*,'(1x,a25,1x,a6)')'precond:',macros(1)  
+          write(*,'(1x,a10,1x,a6)')'Precond:',macros(1)  
         endif
 c .....................................................................
 c
@@ -1485,7 +1485,7 @@ c ... precondicionador diagonal
       elseif( string .eq. macros(2)) then
         precond = 2
         if(my_id.eq.0) then
-          write(*,'(1x,a25,1x,a6)')'precond:',macros(2)
+          write(*,'(1x,a10,1x,a6)')'Precond:',macros(2)
         endif
 c .....................................................................
 c
@@ -1493,7 +1493,7 @@ c ... precondicionador ILDLT
       elseif( string .eq. macros(3)) then
         precond = 3
         if(my_id.eq.0) then
-          write(*,'(1x,a25,1x,a6)')'precond:',macros(3)
+          write(*,'(1x,a10,1x,a6)')'Precond:',macros(3)
         endif
 c .....................................................................
 c
@@ -1501,7 +1501,7 @@ c ... precondicionador ILLT ( Cholesky )
       elseif( string .eq. macros(4)) then
         precond = 4
         if(my_id.eq.0) then
-          write(*,'(1x,a25,1x,a6)')'precond:',macros(4)
+          write(*,'(1x,a10,1x,a6)')'Precond:',macros(4)
         endif
 c .....................................................................
 c
@@ -1509,7 +1509,7 @@ c ... precondicionador ILLT ( Cholesky )
       elseif( string .eq. macros(5)) then
         precond = 5
         if(my_id.eq.0) then
-          write(*,'(1x,a25,1x,a6)')'precond:',macros(5)
+          write(*,'(1x,a10,1x,a6)')'Precond:',macros(5)
         endif
 c .....................................................................
 c
@@ -1527,7 +1527,7 @@ c .....................................................................
 c
 c ...  
         if(my_id.eq.0) then
-          write(*,'(1x,a25,1x,a6,i3)')'precond:',macros(6),iparam(4)
+          write(*,'(1x,a10,1x,a6,i3)')'Precond:',macros(6),iparam(4)
         endif
 c .....................................................................
 c
@@ -1535,7 +1535,7 @@ c ... precondicionador Block diagnal
       elseif( string .eq. macros(7)) then
         precond = 7
         if(my_id.eq.0) then
-          write(*,'(1x,a25,1x,a6)')'precond:',macros(7)
+          write(*,'(1x,a10,1x,a6)')'Precond:',macros(7)
         endif
 c .....................................................................
 c
@@ -1551,7 +1551,7 @@ c ...
       end
 c ********************************************************************** 
 c
-c c **********************************************************************
+c c ********************************************************************
 c * Data de criacao    : 27/06/2016                                    *
 c * Data de modificaco : 00/00/0000                                    * 
 c * ------------------------------------------------------------------ *  

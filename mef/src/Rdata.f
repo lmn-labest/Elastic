@@ -569,7 +569,6 @@ c
  1651 continue
       print*, trim(fname), ' arquivo nao existente !'
       stop
-
 c ......................................................................
 c
 c ... (return) Retorna leitura para arquivo de dados basico:
@@ -1875,6 +1874,9 @@ c .....................................................................
 c *********************************************************************
 c
 c *********************************************************************
+c * Data de criacao    : 00/00/0000                                   *
+c * Data de modificaco : 13/10/2016                                   *
+c * ------------------------------------------------------------------* 
 c * read_config : leitura das configuracoes basicas de excucao        *
 c * ------------------------------------------------------------------*
 c * Parametros de entrada :                                           *
@@ -1900,86 +1902,215 @@ c *********************************************************************
       implicit none
       include 'string.fi'
       character*15 string,macro(7)
+      character*80 fname
       integer*8 maxmem
       integer nth_elmt,nth_solver
-      logical omp_elmt,omp_solver,r(7),reord,bvtk
-      integer n,j,nmacro
+      logical omp_elmt,omp_solver,reord,bvtk
+      integer i,j,nmacro
       integer nin
+      integer nincl /7/
       data nmacro /7/
       data macro/'memory         ','omp_elmt       ','omp_solver     ',
      .           'nth_elmt       ','nth_solver     ','reord          ',
      .           'bvtk           '/
 c .....................................................................
-      n      = 0
-      r(1:nmacro) = .false.
-      call readmacro(nin,.true.)
+c      
+c ... arquivo de config
+      call readmacro(nin,.false.)
+      write(fname,'(80a)') (word(j),j=1,strl)
+      open(nincl, file= fname,status= 'old',err=200,action='read')
+c .....................................................................
+c
+c ...
+      call readmacro(nincl,.true.)
       write(string,'(15a)') (word(j),j=1,12)
-      do while (strl .ne. 0)
-         if     (string .eq. macro(1)) then
-            call readmacro(nin,.false.)
+      do while (string .ne. 'end')
+c ... memory
+         if (string .eq. macro(1)) then
+            i = 1
+            call readmacro(nincl,.false.)
             write(string,'(15a)') (word(j),j=1,15)            
             read(string,*,err = 100,end = 100) maxmem
 c ... convertendo de Mbytes para para numero de inteiros e 4 bytes
             maxmem = (maxmem*1024*1024)/4
-            n = n + 1
-            r(1) = .true.
+c .....................................................................
+c
+c ... 
          elseif (string .eq. macro(2)) then
-            call readmacro(nin,.false.)
+            i = 2
+            call readmacro(nincl,.false.)
             write(string,'(15a)') (word(j),j=1,15)
             read(string,*,err = 100,end = 100) omp_elmt
-            n = n + 1
-            r(2) = .true.
+c .....................................................................
+c
+c ... 
          elseif (string .eq. macro(3)) then
-            call readmacro(nin,.false.)
+            i = 3
+            call readmacro(nincl,.false.)
             write(string,'(15a)') (word(j),j=1,15)           
             read(string,*,err = 100,end = 100) omp_solver
-            n = n + 1
-            r(3) = .true.
+c .....................................................................
+c
+c ... 
          elseif (string .eq. macro(4)) then
-            call readmacro(nin,.false.)
+            i = 4
+            call readmacro(nincl,.false.)
             write(string,'(15a)') (word(j),j=1,15)            
             read(string,*,err = 100,end = 100) nth_elmt
-            n = n + 1
-            r(4) = .true.
-         elseif (string .eq. macro(5)) then
-            call readmacro(nin,.false.)
+c .....................................................................
+c
+c ... 
+          elseif (string .eq. macro(5)) then
+            i = 5
+            call readmacro(nincl,.false.)
             write(string,'(15a)') (word(j),j=1,15)            
             read(string,*,err = 100,end = 100) nth_solver
-            n = n + 1
-            r(5) = .true.
+c .....................................................................
+c
+c ... 
          elseif (string .eq. macro(6)) then
-            call readmacro(nin,.false.)
+            i = 6
+            call readmacro(nincl,.false.)
             write(string,'(15a)') (word(j),j=1,15)            
             read(string,*,err = 100,end = 100) reord          
-            n = n + 1
-            r(6) = .true.
-         elseif (string .eq. macro(7)) then
-            call readmacro(nin,.false.)
+c .....................................................................
+c
+c ... 
+          elseif (string .eq. macro(7)) then
+            i = 7
+            call readmacro(nincl,.false.)
             write(string,'(15a)') (word(j),j=1,15)            
             read(string,*,err = 100,end = 100) bvtk          
-            n = n + 1
-            r(7) = .true.
-         endif 
-         call readmacro(nin,.false.)
+          endif 
+c .....................................................................
+c
+c ... 
+         call readmacro(nincl,.true.)
          write(string,'(15a)') (word(j),j=1,15)                 
       end do
-c ...
-      call readmacro(nin,.true.)
-      call readmacro(nin,.false.)
 c ......................................................................
 c
 c ...
-      if(n .lt. 7) goto 100
-      return
-c ......................................................................                        
-  100 continue
-      print*,'*** Erro na leitura das variaveis de controle !'
-      do j = 1, nmacro
-        if(.NOT.r(j)) print*,macro(j), ' faltando!!'
-      enddo
-      stop       
+      close(nincl)
+      return  
+c ......................................................................
+ 100  continue
+      print*,'*** Erro na leitura das config !',macro(i)
+      stop                          
+ 200  continue
+      print*, trim(fname), ' arquivo nao existente !'
+      stop      
 c ......................................................................                  
       end
+c *********************************************************************
+c
+c *********************************************************************
+c * Data de criacao    : 13/10/2016                                   *
+c * Data de modificaco : 13/10/2016                                   *
+c * ------------------------------------------------------------------* 
+c * read_solver_config : leitura das configuracoes basicas do solver  *      *
+c * ------------------------------------------------------------------*
+c * Parametros de entrada :                                           *
+c * ----------------------------------------------------------------- *
+c * solver    - nao definido                                          *
+c * tol       - nao definido                                          *
+c * maxit     - nao definido                                          *
+c * precond   - nao definido                                          *
+c * nin       - arquivo de entrada                                    *
+c * my_id     - id mpi                                                *
+c * ----------------------------------------------------------------- *
+c * Parametros de saida :                                             *
+c * ----------------------------------------------------------------- *
+c * solver    - solver ( 1 - CG)                                      *
+c * tol       - tolerancia do solver                                  *
+c * maxit     - numero de iteracoes                                   *
+c * precond   - precondicionador ( 1 - NONE; 2 - Diag )               *
+c * nin       - arquivo de entrada                                    *
+c * my_id     - id mpi                                                *
+c * ----------------------------------------------------------------- *
+c *********************************************************************
+      subroutine read_solver_config(solver,tol,maxit,precond,nin,my_id)
+      implicit none
+      include 'string.fi'
+      character*15 string,macro(7)
+      character*80 fname
+      real*8 tol,smachn
+      integer my_id,solver,maxit,precond
+      integer i,j,nmacro
+      integer nin
+      integer nincl /7/
+      data nmacro /7/
+      data macro/'name           ','it             ','tol            ',
+     .           'precond        ','               ','               ',
+     .           '               '/
+c .....................................................................
+c      
+c ... arquivo de config
+      call readmacro(nin,.false.)
+      write(fname,'(80a)') (word(j),j=1,strl)
+      open(nincl, file= fname,status= 'old',err=200,action='read')
+c .....................................................................
+c
+c ...
+      call readmacro(nincl,.true.)
+      write(string,'(15a)') (word(j),j=1,12)
+      do while (string .ne. 'end')
+c ... solver
+         if (string .eq. macro(1)) then
+            i = 1
+            call readmacro(nincl,.false.)
+            write(string,'(6a)') (word(j),j=1,6)
+            call set_solver(string,solver,nin,my_id)            
+c .....................................................................
+c
+c ... maxit
+         elseif (string .eq. macro(2)) then
+            i = 2
+            call readmacro(nincl,.false.)
+            write(string,'(15a)') (word(j),j=1,15)
+            read(string,*,err = 100,end = 100) maxit
+            if(my_id.eq.0) write(*,'(1x,a10,1x,9i)')'It     :',maxit 
+c .....................................................................
+c
+c ... tol
+         elseif (string .eq. macro(3)) then
+            i = 3
+            call readmacro(nincl,.false.)
+            write(string,'(15a)') (word(j),j=1,15)           
+            read(string,*,err = 100,end = 100) tol
+            if(tol .eq. 0.d0) tol = smachn()
+            if(my_id.eq.0) write(*,'(1x,a10,1x,d13.6)')'Tol    :',tol   
+c .....................................................................
+c
+c ... precond
+         elseif (string .eq. macro(4)) then
+            i = 4
+            call readmacro(nincl,.false.)
+            write(string,'(6a)') (word(j),j=1,6)            
+            call set_precond(word,precond,nin,my_id)
+         endif
+c .....................................................................
+c
+c ... 
+         call readmacro(nincl,.true.)
+         write(string,'(15a)') (word(j),j=1,15)                 
+      end do
+c ......................................................................
+c
+c ...
+      close(nincl)
+      return  
+c ......................................................................
+ 100  continue
+      print*,'*** Erro na leitura das config !',macro(i)
+      stop                          
+ 200  continue
+      print*, trim(fname), ' arquivo nao existente !'
+      stop      
+c ......................................................................                  
+      end
+c **********************************************************************
+c
 c **********************************************************************
 c * Data de criacao    : 09/10/2016                                    *
 c * Data de modificaco : 00/00/0000                                    *
@@ -2030,6 +2161,80 @@ c ...
         endif
       enddo
 c ......................................................................
+      return
+      end
+c **********************************************************************
+c
+c **********************************************************************
+c * Data de criacao    : 27/09/2016                                    *
+c * Data de modificaco : 14/10/2016                                    * 
+c * ------------------------------------------------------------------ *      
+c * SET_PRINT_VTK : leitualeitura das configuracoes basicas de excucao *
+c * ------------------------------------------------------------------ *
+c * Parametros de entrada :                                            *
+c * -----------------------------------------------------------------  *
+c * fprint    - nao definido                                           *
+c * my_id   - id do processo do mpi                                    *
+c * nin       - arquivo de entrada                                     *
+c * -----------------------------------------------------------------  *
+c * Parametros de saida :                                              *
+c * -----------------------------------------------------------------  *
+c * fprint - deslocamento    (1)                                       *   
+c *          stress          (2)                                       *
+c *          quadratico      (3)                                       *
+c * ------------------------------------------------------------------ * 
+c * OBS:                                                               *
+c * ------------------------------------------------------------------ * 
+c **********************************************************************
+      subroutine set_print_vtk(fprint,my_id,nin)
+      implicit none
+      include 'string.fi'
+      character*15 string,macro(3)
+      logical fprint(*),fexit
+      integer j,nmacro,my_id
+      integer nin
+      data nmacro /3/
+      data macro/'quadratic      ','desloc        ','stress         '/
+c ......................................................................
+c
+c ...
+      do j = 1, nmacro
+        fprint(j) = .false.
+      enddo
+c ......................................................................
+c
+c ...
+      fexit = .true.
+      call readmacro(nin,.false.)
+      write(string,'(15a)') (word(j),j=1,12)
+      do while (strl .ne. 0 )
+c ... quadratic 
+        if     (string .eq. macro(1)) then
+          fprint(1) = .true.
+c .....................................................................
+c
+c ... desloc   
+        elseif (string .eq. macro(2)) then
+          fprint(2) = .true. 
+c .....................................................................
+c
+c ... stress   
+        elseif (string .eq. macro(3)) then
+          fprint(3) = .true.
+        endif
+c .....................................................................
+        call readmacro(nin,.false.)
+        write(string,'(15a)') (word(j),j=1,15)                 
+      end do
+c .....................................................................
+c
+c ...
+      do j = 1, nmacro
+        if(my_id.eq.0) print*,macro(j),fprint(j)
+      enddo
+c ......................................................................
+c
+c ...
       return
       end
 c **********************************************************************

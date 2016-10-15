@@ -80,7 +80,7 @@ c ... matvec comum:
 c
      .                  my_id,neqf1i,neqf2i,neq_doti,
      .                  i_fmapi,i_xfi,i_rcvsi,i_dspli,ia(i_threads_y),
-     .                  .true.,.true.,.true.)
+     .                  .true.,.true.,.true.,mpi)
 c .......................................................................
 c
 c ... sem OpenMp
@@ -113,7 +113,7 @@ c ... matvec comum:
 c
      .                 my_id,neqf1i,neqf2i,neq_doti,
      .                 i_fmapi,i_xfi,i_rcvsi,i_dspli,ia(i_threads_y),
-     .                 .true.,.true.,.true.)
+     .                 .true.,.true.,.true.,mpi)
             else
 c .......................................................................
 c
@@ -439,3 +439,61 @@ c ......................................................................
       return
       end
 c **********************************************************************
+c
+c **********************************************************************
+c * Data de criacao    : 18/04/2016                                    *
+c * Data de modificaco : 00/00/0000                                    * 
+c * ------------------------------------------------------------------ *  
+c * SET_PRECOND : escolhe o precondicionandor                          *
+c * ------------------------------------------------------------------ * 
+c * Parametros de entrada:                                             *
+c * ------------------------------------------------------------------ * 
+c * macro   - precondicionador escolhido                               *
+c * solver  - nao definido                                             *
+c * nin     - aqruivo de entrada                                       *
+c * my_id   - id do processo do mpi                                    *
+c * ------------------------------------------------------------------ * 
+c * Parametros de saida:                                               *
+c * ------------------------------------------------------------------ * 
+c * solver  - solver escolhido                                         *
+c *         1 - CG                                                     *
+c *         2 - GMRES                                                  *
+c *         3 -                                                        *
+c *         4 - BICGSTAB                                               *
+c * ------------------------------------------------------------------ * 
+c * OBS:                                                               *
+c * ------------------------------------------------------------------ *
+c ********************************************************************** 
+      subroutine set_solver(macro,solver,nin,my_id)
+      implicit none
+      include 'string.fi'
+      include 'precond.fi'
+      character macro(maxstrl)
+      character*6 macros(7),string
+      integer solver,nin,my_id
+      integer i,nmc 
+      data macros/'cg    ','      ','      '
+     .           ,'      ','      ','      '
+     .           ,'      '/
+      data nmc /7/
+c ...
+      write(string,'(6a)') (word(i),i=1,6)
+c ... CG
+      if( string .eq. macros(1)) then
+        solver = 1
+        if(my_id.eq.0) then
+          write(*,'(1x,a10,1x,a6)')'Solver :',macros(1)
+        endif
+c .....................................................................
+c
+c ...                         
+      else
+        print*,'Erro na leitura da macro set solver !'
+        stop
+      endif 
+c .....................................................................
+c
+c ...
+      return
+      end
+c ********************************************************************** 

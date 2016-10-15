@@ -112,7 +112,6 @@ c ... Loop nos elementos:
 c     ------------------
           do jc = i_colorg(1,ic), i_colorg(2,ic)
             nel = i_elcolor(jc)
-c           print*,omp_get_thread_num(),jc,nel,ic
             kk = 0
 c ... loop nos nos de deslocamentos
             do i = 1, nen
@@ -251,7 +250,6 @@ c **********************************************************************
       subroutine tform_mec(ix    ,x    ,e   ,ie
      .                    ,ic    ,xl   ,ul  
      .                    ,pl    ,u    ,tx0 ,t 
-     .                    ,fnno  
      .                    ,nnodev,nnode
      .                    ,numel ,nenv     ,nen
      .                    ,ndm   ,ndf      ,nst ,ntn  
@@ -275,8 +273,6 @@ c * pl(ntn*nen)      - nao definido                                    *
 c * u(ndf,nnode)     - solucao corrente                                *
 c * tx0(ntn,nnodev)  - tensao inicial                                  *
 c * t(ntn,nnodev)    - nao definido                                    *
-c * fnno(nnode)      - identifica dos nos de vertices                  * 
-c *                    ( 1 - vertice | 0 )                             *
 c * nnodev           - numero de nos de vertices                       *
 c * nnode            - numero de nos totais                            *
 c * numel            - numero de elementos                             *
@@ -309,7 +305,7 @@ c     include 'mpif.h'
       include 'termprop.fi'
       integer nnodev,nnode,numel,nenv,nen,ndf,nst,ndm,ntn
 c ......................................................................      
-      integer ix(nen+1,*),ie(*),ic(*),fnno(*)
+      integer ix(nen+1,*),ie(*),ic(*)
       integer nel,ma,iel,i,j,k,k1,no,kk,nenl
       integer ilib,isw
       real*8  xl(ndm,nenv),ul(nst),pl(nen*ntn)
@@ -332,7 +328,6 @@ c ......................................................................
 c
 c ...
       do 30 i = 1, nnode
-c       if(fnno(i) .eq. 1) then
           ic(i) = 0
 c ... tensao
           do 10 j = 1, ntn
@@ -403,7 +398,6 @@ c ... Comunica vetor de contagem de elementos por no'
 c     if (novlp) call allgatheri(ic,i_xfi)
 c .......................................................................
       do 1000 i = 1, nnode
-c       if(fnno(i) .eq. 1) then
 c ... tensao
           do 1010 j = 1, ntn
 c ... tensao total            
