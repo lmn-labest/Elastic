@@ -40,6 +40,7 @@ c ... arquivo de impressao nos nos ( pu,stress,stressE,stressB,flux,...)
       integer nfiles,ifiles
       parameter ( nfiles = 5)
       logical new_file(nfiles),flag_pnd,print_flag(10)
+      logical bvtk,legacy_vtk
 c .....................................................................
 c
 c ... Variaveis de controle de solucao:
@@ -76,10 +77,6 @@ c
       integer i,k
       real*8  dot_par
 c .....................................................................
-c 
-c ...
-      logical bvtk
-c ......................................................................
 c
 c ... Variaveis de medicao de tempo:
 c
@@ -215,7 +212,8 @@ c ... campo gravitacional (Padrao)
 c ...
       flag_macro_mesh = .false.
 c ... 
-      bvtk = .false.
+      bvtk       = .false.
+      legacy_vtk = .false.
 c ... OpenMP
       omp_elmt = .false.
       omp_solv = .false.
@@ -587,9 +585,9 @@ c
 c ...
         if( my_id .eq. 0 ) then
           print*, 'Macro PGEO'
-          call write_mesh_geo(ia(i_g),ia(i_g1),print_nnode,nelG
-     .                       ,nen    ,ndm     ,prename    ,bvtk
-     .                       ,.true. ,nplot)
+          call write_mesh_geo(ia(i_g)    ,ia(i_g1),print_nnode,nelG
+     .                       ,nen        ,ndm     ,prename    ,bvtk
+     .                       ,legacy_vtk ,nplot)
         endif
 c .....................................................................
 c
@@ -609,7 +607,7 @@ c ...
      .                      ,ia(i_tx0)  ,ia(i_nload),ia(i_eload)
      .                      ,print_nnode,numel      ,ndf     ,ntn
      .                      ,nen        ,ndm        ,prename
-     .                      ,bvtk       ,macros     ,.true.
+     .                      ,legacy_vtk ,macros     ,legacy_vtk
      .                      ,nplot      ,nout_face)
         writetime = writetime + MPI_Wtime()-timei
       endif
@@ -927,12 +925,11 @@ c ......................................................................
 c ......................................................................
 c
 c ...
-          fname = name(prename,istep,2)
           call write_mesh_res_mec(ia(i_g1) ,ia(i_g2) ,ia(i_g),ia(i_tx)
      .                         ,print_nnode,nelG
-     .                         ,nen        ,ndm      ,ndf   ,ntn
-     .                         ,fname      ,.false.,.true.  ,print_flag
-     .                         ,nplot)
+     .                         ,nen        ,ndm ,ndf        ,ntn
+     .                         ,prename    ,istep
+     .                         ,bvtk       ,legacy_vtk,print_flag,nplot)
           close(nplot)  
 c ......................................................................
 c
@@ -978,12 +975,11 @@ c ......................................................................
 c ......................................................................
 c
 c ...
-        fname = name(prename,istep,2)
-        call write_mesh_res_mec(ia(i_ix) ,ia(i_x)  ,ia(i_u),ia(i_tx)
+        call write_mesh_res_mec(ia(i_ix) ,ia(i_x)    ,ia(i_u)  ,ia(i_tx)
      .                       ,print_nnode,numel
-     .                       ,nen        ,ndm      ,ndf   ,ntn
-     .                       ,fname      ,.false.,.true.  ,print_flag
-     .                       ,nplot)
+     .                       ,nen        ,ndm        ,ndf      ,ntn
+     .                       ,prename    ,istep
+     .                       ,bvtk       ,legacy_vtk,print_flag,nplot)
         close(nplot)  
 c ......................................................................
 c

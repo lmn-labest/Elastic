@@ -613,7 +613,7 @@ c ... faces
      .               ,max_no_face,line_face,tria_face
      .               ,quad_face  ,bvtk     ,nelemtload)
       else
-        call face_vtu(ia(i_p)    ,ia(i_b2)
+        call face_vtu(ia(i_p)    ,ia(i_b1)  ,ia(i_b2)
      .               ,max_no_face,line_face,tria_face
      .               ,quad_face  ,bvtk     ,nelemtload)
       endif
@@ -709,7 +709,7 @@ c *********************************************************************
 c
 c *********************************************************************
 c * Data de criacao    : 09/04/2016                                   *
-c * Data de modificaco :                                              * 
+c * Data de modificaco : 16/10/2016                                   * 
 c * ------------------------------------------------------------------*    
 c * WRITE_MESH_RES_MEC: escreve a malha com os resultdados do problema*
 c * mecanico no formato vtk                                           *
@@ -724,7 +724,8 @@ c * nnode       - numero de nos de vertices                           *
 c * numel       - numero de elementos                                 *
 c * nen         - numero de nos por elementos                         *
 c * ndm         - numero de dimensoes                                 *
-c * filein      - prefix do arquivo de saida                          *
+c * prename     - prefix do arquivo de saida                          *
+c * istep       - passo tempo                                         *
 c * bvtk        - true BINARY vtk false ASCII vtk                     *
 c * legacy      - true (formato padrão .vtk) false (formato xlm .vtu)*
 c * fprint      -                                                     *
@@ -741,8 +742,8 @@ c *********************************************************************
        subroutine write_mesh_res_mec(el     ,x     ,u     ,tx    
      .                             ,nnode  ,numel  
      .                             ,nen    ,ndm   ,ndf   ,ntn  
-     .                             ,fileout,bvtk  ,legacy,fprint
-     .                             ,nout)
+     .                             ,prename,istep
+     ,                             ,bvtk   ,legacy,fprint,nout)
 c ===
       use Malloc 
       implicit none
@@ -757,25 +758,31 @@ c ... locais
       data i_p/1/,i_tensor/1/
       character*15 aux1
       character*30 aux
+c ... tempo
+      integer istep
 c ... variaveis dums
       real*8 ddum
       real*4 fdum
       integer idum 
 c ... arquivo      
       integer nout
-      character*80 fileout,name,filein
+      character*80 fileout,name,prename
       logical bvtk,legacy,fprint(*)
       integer cod,cod2,gdl
 c =====================================================================
 c
 c ===
+      if(legacy) then
+        fileout = name(prename,istep,2)
+      else  
+        fileout = name(prename,istep,3)
+      endif
       if(bvtk)then
         open(unit=nout,file=fileout,access='stream'
      .      ,form='unformatted',convert='big_endian')
       else
         open(unit=nout,file=fileout)
       endif  
-c     print*,fileout,nout
 c =====================================================================
 c
 c === cabecalho
@@ -846,6 +853,11 @@ c ... cod = 1 variaveis interias
       endif 
       i_p = dealloc('p       ')
 c .....................................................................
+c
+c ...
+      if(legacy .eqv. .false.) then
+        call cell_data_finalize_vtu(bvtk,nout)
+      endif 
 c =====================================================================
 c
 c === nos  
