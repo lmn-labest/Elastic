@@ -642,32 +642,9 @@ c
 c ......................................................................
   900 continue
       if (my_id .eq. 0)   print*, 'Macro Gravity'
-c ... gx
-      call readmacro(nin,.false.)
-      write(string,'(30a)') (word(i),i=1,30)
-      read(string,*,err =910,end =910) gravity(1)    
-c ... gy
-      call readmacro(nin,.false.)
-      write(string,'(30a)') (word(i),i=1,30)
-      read(string,*,err =920,end =920) gravity(2)    
-c ... gz
-      call readmacro(nin,.false.)
-      write(string,'(30a)') (word(i),i=1,30)
-      read(string,*,err =930,end =930) gravity(3)    
-      gravity_mod = dsqrt(gravity(1)*gravity(1)
-     .                   +gravity(2)*gravity(2)
-     .                   +gravity(3)*gravity(3))
+      call read_gravity(gravity,gravity_mod,nin)
       goto 50
-  910 continue
-      print*,'Erro na leitura da macro (GRAVITY) gx !'
-      goto 5000
-  920 continue
-      print*,'Erro na leitura da macro (GRAVITY) gy !'
-      goto 5000
-  930 continue
-      print*,'Erro na leitura da macro (GRAVITY) gz !'
-      goto 5000
-c ----------------------------------------------------------------------
+c ......................................................................
 c
 c ... Macro-comando:       
 c
@@ -1175,7 +1152,7 @@ c ... Macro-comando: CONFIG
 c
 c ......................................................................
  3700 continue
-      if(my_id) print*, 'Macro CONFIG    '
+      if(my_id .eq. 0) print*, 'Macro CONFIG    '
       if(flag_macro_mesh) then
         print*,'Macro so pode ser utilizada antes da macro mesh'
         goto 5000
