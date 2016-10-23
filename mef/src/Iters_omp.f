@@ -21,10 +21,10 @@ c *********************************************************************
      .                  ,matvec,dot
      .                  ,my_id ,neqf1i ,neqf2i ,neq_doti,i_fmapi
      .                  ,i_xfi ,i_rcvsi,i_dspli,thread_y
-     .                  ,fprint,flog   ,fnew,mpi)
+     .                  ,fprint,flog   ,fnew,mpi,nprcs)
 c **********************************************************************
 c * Data de criacao    : 00/00/0000                                    *
-c * Data de modificaco : 14/10/2016                                    * 
+c * Data de modificaco : 23/10/2016                                    * 
 c * ------------------------------------------------------------------ *   
 c * PCG_OMP : Solucao de sistemas de equacoes pelo metodo dos          *
 c * gradientes conjugados com precondicionador diagonal para matrizes  *
@@ -64,6 +64,7 @@ c * flog     - log do arquivo de saida                                 *
 c * fnew     - .true.  -> x0 igual a zero                              *
 c *            .false. -> x0 dado                                      *
 c * mpi      - true|false                                              * 
+c * nprcs    - numero de processos mpi                                 *  
 c * ------------------------------------------------------------------ * 
 c * Parametros de saida:                                               *
 c * ------------------------------------------------------------------ *
@@ -81,7 +82,7 @@ c **********************************************************************
 c ... Mpi      
       integer ierr
 c .....................................................................      
-      integer neqf1i,neqf2i,neq_doti
+      integer neqf1i,neqf2i,neq_doti,nprcs
 c ... ponteiros      
       integer*8 i_fmapi,i_xfi
       integer*8 i_rcvsi,i_dspli
@@ -95,7 +96,11 @@ c ......................................................................
       real*8  time0,time
       real*8  thread_y(*)
       logical flog,fprint,fnew,mpi
-      external matvec,dot
+c ...
+      integer*8 flop_cg
+      real*8  mflops,vmean
+c .....................................................................
+      external matvec,dot, flop_cg
 c ======================================================================
       time0 = MPI_Wtime()
 c ......................................................................
@@ -113,7 +118,7 @@ c$omp.private(i,j,jj,xkx,norm,norm_r,norm_m_r,norm_b)
 c$omp.private(d,di,conv,alpha,beta,tmp)
 c$omp.shared(neq,nad,ia,ja,al,ad,au,b,x,m,z,r,p,tol,maxit,thread_y)
 c$omp.shared(neqf1i,neqf2i,i_fmapi,i_xfi,i_rcvsi,i_dspli,neq_doti)
-c$omp.shared(flog,fprint,fnew,my_id,time,time0,mpi)
+c$omp.shared(flog,fprint,fnew,my_id,time,time0,mpi,mflops,vmean,nprcs)
 c$omp.num_threads(nth_solv)                                          
 c ......................................................................
 c
@@ -257,11 +262,22 @@ c ......................................................................
       time = MPI_Wtime()
       time = time-time0
 c ......................................................................
+c 
+c ...
+      if(mpi) then
+        call mpi_mean(vmean,time,nprcs) 
+        time   = vmean        
+      endif    
+      mflops = (flop_cg(neq,nad,j,2,mpi)/1000000)/time  
+c ......................................................................
+c
+c ...
       if(my_id .eq.0 .and. fprint )then
         if(mpi) then
-          write(*,1110)tol,conv,j,xkx,norm,norm_r,norm_m_r,time
+          write(*,1110)tol,conv,j,xkx,norm,norm_r,norm_m_r,mflops,time
         else
-          write(*,1100)tol,conv,neq,nad,j,xkx,norm,norm_r,norm_m_r,time
+          write(*,1100)tol,conv,neq,nad,j,xkx,norm,norm_r,norm_m_r
+     .                ,mflops,time
         endif
       endif
 c ......................................................................
@@ -292,6 +308,7 @@ c ======================================================================
      . 5x,'|| x ||              = ',d20.10/
      . 5x,'|| b - Ax ||         = ',d20.10/
      . 5x,'|| b - Ax ||m        = ',d20.10/
+     . 5x,'Mflops               = ',f20.2/
      . 5x,'CPU time (s)         = ',f20.2/)
 1110  format(' (PCG_OMP_MPI) solver:'/
      . 5x,'Solver tol           = ',d20.6/
@@ -301,6 +318,7 @@ c ======================================================================
      . 5x,'|| x ||              = ',d20.10/
      . 5x,'|| b - Ax ||         = ',d20.10/
      . 5x,'|| b - Ax ||m        = ',d20.10/
+     . 5x,'Mflops               = ',f20.2/
      . 5x,'CPU time (s)         = ',f20.2/)
  1200 format (' *** WARNING: No convergence reached after ',i9,
      .        ' iterations !',/)

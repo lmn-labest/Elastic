@@ -80,7 +80,7 @@ c ... matvec comum:
 c
      .                  my_id,neqf1i,neqf2i,neq_doti,
      .                  i_fmapi,i_xfi,i_rcvsi,i_dspli,ia(i_threads_y),
-     .                  .true.,.true.,.true.,mpi)
+     .                  .true.,.true.,.true.,mpi,nprcs)
 c .......................................................................
 c
 c ... sem OpenMp
@@ -96,7 +96,7 @@ c ... matvec desenrolado:
 c
      .                 my_id,neqf1i,neqf2i,neq_doti,i_fmapi,
      .                 i_xfi,i_rcvsi,i_dspli,
-     .                 .true.,.true.,.true.,mpi)
+     .                 .true.,.true.,.true.,mpi,nprcs)
 c ......................................................................
             endif
 c ......................................................................
@@ -113,7 +113,7 @@ c ... matvec comum:
 c
      .                 my_id,neqf1i,neqf2i,neq_doti,
      .                 i_fmapi,i_xfi,i_rcvsi,i_dspli,ia(i_threads_y),
-     .                 .true.,.true.,.true.,mpi)
+     .                 .true.,.true.,.true.,mpi,nprcs)
             else
 c .......................................................................
 c
@@ -129,7 +129,7 @@ c ... matvec desenrolado:
 c
      .                my_id,neqf1i,neqf2i,neq_doti,i_fmapi,
      .                i_xfi,i_rcvsi,i_dspli,
-     .                .true.,.true.,.true.,mpi)
+     .                .true.,.true.,.true.,mpi,nprcs)
             endif
          endif
 c ......................................................................

@@ -503,6 +503,8 @@ c
       close(nlog) 
       return
       end
+c **********************************************************************
+c
 c ********************************************************************** 
 c * Data de criacao    : 15/10/2016                                    *
 c * Data de modificaco : 00/00/0000                                    *
@@ -527,8 +529,8 @@ c **********************************************************************
       real*8 x,tmp,vmean
       integer n,i,ierr
 c .....................................................................
-      call MPI_REDUCE(x,tmp,1,MPI_DOUBLE_PRECISION,MPI_SUM,0
-     .               ,MPI_COMM_WORLD,ierr)
+      call MPI_ALLREDUCE(x,tmp,1,MPI_DOUBLE_PRECISION,MPI_SUM
+     .                  ,MPI_COMM_WORLD,ierr)
 c .....................................................................
 c
 c ...
