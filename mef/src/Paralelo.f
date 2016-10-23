@@ -467,7 +467,7 @@ c     Passa valores do arranjo local i_l para o arranjo global i1
 c
 c     Soma i1's de todos os processos em i_g, no processo raiz
       call MPI_reduce(ia(i1),ia(i_g),nl*nelG,MPI_INTEGER,
-     .                MPI_SUM,0,MPI_COMM_WORLD,ierr)
+     .                MPI_SUM,0,MPI_COMM_WORLD,ierr)      
       i1 = dealloc('temp    ')
 c ......................................................................
       return
@@ -755,20 +755,18 @@ c .....................................................................
 c =====================================================================
 c
 c === sem Mpi
-      if (nprcs .eq. 1) then
+      if (mpi .eqv. .false.) then
         nno_pload = nnode
         nnovG     = nnodev
         nnoG      = nnode
         nelG      = numel
         ovlp      = .false.
         novlp     = .false.        
-        mpi       = .false.        
         return
       endif
 c =====================================================================
 c
 c === com Mpi
-      mpi = .true.
       nno_pload = nno1 + nno2
 c        Estruturas de comunicacao para send-receive 
 c ... {rreqs} = receive requests:

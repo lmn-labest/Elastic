@@ -142,9 +142,11 @@ c ......................................................................
 c
 c ... Inicializacao MPI:
 c
+      mpi = .false.
       call MPI_INIT( ierr )
       call MPI_COMM_SIZE( MPI_COMM_WORLD, nprcs, ierr )
       call MPI_COMM_RANK( MPI_COMM_WORLD, my_id, ierr )
+      if(nprcs .gt. 1) mpi = .true.
 c ......................................................................
 c
 c ... Inicializacao de variaveis da estrutura interna de macro-comandos:
@@ -347,7 +349,7 @@ c ......................................................................
       if(my_id.eq.0)print*, 'Macro MESH'  
 c ... Inicializacao da estrutura de dados de gerenciamento de memoria:
 c
-      call init_malloc(maxmem)
+      call init_malloc()
 c ......................................................................
 c
 c ...
@@ -412,7 +414,7 @@ c
 c.... Otimizacao da largura de banda:
 c
       timei = MPI_Wtime()
-      if (nprcs .gt. 1) then
+      if(mpi) then
        call reord(ia(i_ix),ia(i_inum),nno1-nno1a,nnode,numel,nen,reordf)
       else
        call reord(ia(i_ix),ia(i_inum),nnode,nnode,numel,nen,reordf)
@@ -572,11 +574,11 @@ c ...
 c ...
       print_nnode = nnovG   
       if(print_flag(1)) print_nnode = nnoG
+     
 c ......................................................................
 c
 c ... Geometria:
-      if(mpi) then
-        
+      if(mpi) then       
         writetime = writetime + MPI_Wtime()-timei 
         call global_ix(nen+1,numel_nov,i_ix,i_g,'ixg     ')
         call global_v(ndm   ,nno_pload,i_x ,i_g1,'xg      ')
@@ -588,7 +590,7 @@ c ...
           call write_mesh_geo(ia(i_g)    ,ia(i_g1),print_nnode,nelG
      .                       ,nen        ,ndm     ,prename    ,bvtk
      .                       ,legacy_vtk ,nplot)
-        endif
+        endif        
 c .....................................................................
 c
 c ...        
@@ -624,7 +626,7 @@ c ......................................................................
         print*,'Macro so pode ser utilizada antes da macro mesh'
         goto 5000
       endif
-      call set_print_vtk(print_flag,my_id,nin)      
+      call set_print_vtk(print_flag,my_id,mpi,nprcs,nin)      
       goto 50
 c ----------------------------------------------------------------------
 c
@@ -712,7 +714,7 @@ c ... Macro-comando: SOLVM
 c
 c ......................................................................
  1800 continue
-      if (my_id .eq. 0 ) print*, 'Macro  SOLVM'
+      if (my_id .eq. 0 ) print*, 'Macro  SOLVM' 
 c ...
       ilib   = 1
       i      = 1
@@ -1161,6 +1163,7 @@ c ......................................................................
      .                ,omp_elmt,omp_solv
      .                ,nth_elmt,nth_solv
      .                ,reordf  ,bvtk 
+     .                ,mpi     ,nprcs
      .                ,nin)
       goto 50
 c ----------------------------------------------------------------------

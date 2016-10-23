@@ -1900,6 +1900,8 @@ c * omp_solv  - flag do openmp na fase do solver                      *
 c * nth_solv  - numero de threads usado do solver                     *
 c * reord     - reordanaco do sistema de equacao                      *
 c * bvtk      - saida binario para o vtk legacy                       *
+c * mpi       - true|fasle                                            *
+c * nprcs     - numero de processos do MPI                            *       
 c * nin       - arquivo de entrada                                    *
 c * ----------------------------------------------------------------- *
 c * Parametros de saida :                                             *
@@ -1910,6 +1912,7 @@ c *********************************************************************
      .                      ,omp_elmt,omp_solver
      .                      ,nth_elmt,nth_solver
      .                      ,reord   ,bvtk    
+     .                      ,mpi     ,nprcs
      .                      ,nin)
       implicit none
       include 'string.fi'
@@ -1919,7 +1922,8 @@ c *********************************************************************
       integer nth_elmt,nth_solver
       logical omp_elmt,omp_solver,reord,bvtk
       integer i,j,nmacro
-      integer nin
+      integer nin,nprcs
+      logical mpi
       integer nincl /7/
       data nmacro /7/
       data macro/'memory         ','omp_elmt       ','omp_solver     ',
@@ -1943,6 +1947,7 @@ c ... memory
             call readmacro(nincl,.false.)
             write(string,'(15a)') (word(j),j=1,15)            
             read(string,*,err = 100,end = 100) maxmem
+            if(mpi) maxmem = maxmem/nprcs
 c ... convertendo de Mbytes para para numero de inteiros e 4 bytes
             maxmem = (maxmem*1024*1024)/4
 c .....................................................................
@@ -2020,7 +2025,7 @@ c *********************************************************************
 c * Data de criacao    : 13/10/2016                                   *
 c * Data de modificaco : 13/10/2016                                   *
 c * ------------------------------------------------------------------* 
-c * read_solver_config : leitura das configuracoes basicas do solver  *      *
+c * read_solver_config : leitura das configuracoes basicas do solver  *
 c * ------------------------------------------------------------------*
 c * Parametros de entrada :                                           *
 c * ----------------------------------------------------------------- *

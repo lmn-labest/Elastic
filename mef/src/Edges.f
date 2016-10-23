@@ -1,9 +1,4 @@
-c*****************************Svn***************************************      
-c*$Date: 2011-03-16 15:32:53 -0300 (Wed, 16 Mar 2011) $                 
-c*$Rev: 914 $                                                           
-c*$Author: henrique $                                                   
-c***********************************************************************      
-      subroutine edgstruct(ix,nnode,numel,nen,nedge,i_edg,i_ipedg)
+       subroutine edgstruct(ix,nnode,numel,nen,nedge,i_edg,i_ipedg)
 c **********************************************************************
 c *                                                                    *
 c *   EDGSTRUCT: monta a estrutura de dados para o formato ARESTAS.    *
