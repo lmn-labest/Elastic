@@ -360,10 +360,6 @@ c
       flag_macro_mesh = .true.
 c
 c.... Leitura de dados:
-c
-c      call rdat(nnode,numel,numat,nen,ndf,ndm,nst,i_ix,i_id,i_ie,
-c     .          i_nload,i_eload,i_inum,i_e,i_x,i_f,i_u,i_v,i_a,nin)
-c
       call rdat(nnode     ,nnodev  ,numel      ,numat  
      .         ,nen       ,nenv   
      .         ,ndf       ,ndm     ,nst        ,i_ix  
@@ -569,12 +565,19 @@ c ... Macro-comando: PGEO
 c
 c ......................................................................
   600 continue
-c ...     
-      ntn   = 6
+c ... numero do tensor de tensoes
+c ... | sxx syy szz sxy  0 0 0|
+      if( ndm .eq. 2) then
+        ntn = 4
+c ... | sxx syy szz  sxy syz sxz |
+      else if(ndm .eq. 3) then
+        ntn = 6
+      endif
+c .....................................................................
+c
 c ...
       print_nnode = nnovG   
-      if(print_flag(1)) print_nnode = nnoG
-     
+      if(print_flag(1)) print_nnode = nnoG     
 c ......................................................................
 c
 c ... Geometria:
@@ -596,7 +599,6 @@ c
 c ...        
         i_g1 = dealloc('xg      ')
         i_g  = dealloc('ixg     ')
-        call MPI_barrier(MPI_COMM_WORLD,ierr)
         writetime = writetime + MPI_Wtime()-timei
 c ......................................................................
 c
@@ -609,7 +611,7 @@ c ...
      .                      ,ia(i_tx0)  ,ia(i_nload),ia(i_eload)
      .                      ,print_nnode,numel      ,ndf     ,ntn
      .                      ,nen        ,ndm        ,prename
-     .                      ,legacy_vtk ,macros     ,legacy_vtk
+     .                      ,bvtk       ,macros     ,legacy_vtk
      .                      ,nplot      ,nout_face)
         writetime = writetime + MPI_Wtime()-timei
       endif
@@ -634,7 +636,7 @@ c ... Macro-comando:
 c
 c ......................................................................
   800 continue
-      if(my_id.eq.0)print*, 'Macro  CALNEQ'
+      if(my_id.eq.0)print*, 'Macro CALNEQ'
       cal_neq = .true.
       goto 50
 c ......................................................................
@@ -959,7 +961,6 @@ c ...
      .                       ,nen        ,ndm        ,ndf      ,ntn
      .                       ,prename    ,istep
      .                       ,bvtk       ,legacy_vtk,print_flag,nplot)
-        close(nplot)  
 c ......................................................................
 c
 c ...
@@ -1154,7 +1155,7 @@ c ... Macro-comando: CONFIG
 c
 c ......................................................................
  3700 continue
-      if(my_id .eq. 0) print*, 'Macro CONFIG    '
+      if(my_id .eq. 0) print*, 'Macro CONFIG'
       if(flag_macro_mesh) then
         print*,'Macro so pode ser utilizada antes da macro mesh'
         goto 5000

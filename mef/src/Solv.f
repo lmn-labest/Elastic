@@ -60,7 +60,7 @@ c ... Gradientes conjugados com precondicionador diagonal:
          endif
          i_z = alloc_8('z       ',1,neq)
          i_r = alloc_8('r       ',1,neq)
-         i_s = alloc_8('s       ',1,neq)
+         i_s = alloc_8('s       ',1,neqovlp)
 c ...    precondicionador diagonal:
          call aequalb(m,ad,neq) 
 c ...    Comunicacao da diagonal para o caso non-overlapping:

@@ -75,8 +75,7 @@ c
 c ... ia(i3)=>ja(nad) - ja(k) informa a coluna do coeficiente que ocupa
 c                       a posicao k no vetor a  
 c
-      i3 = alloc_4(ja,1,nad+nad1+1)
-      ia(i3+nad) = 0
+      i3 = alloc_4(ja,1,nad+nad1)
       call csrja(id,num,ia(i0),ia(i1),ia(i3),nnode,ndf,neq,nad,lower,
      .           diag,upper,right)
       call sortgraph(ia(i2),ia(i3),neq)
