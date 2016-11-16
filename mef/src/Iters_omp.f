@@ -24,7 +24,7 @@ c *********************************************************************
      .                  ,fprint,flog   ,fnew,mpi,nprcs)
 c **********************************************************************
 c * Data de criacao    : 00/00/0000                                    *
-c * Data de modificaco : 23/10/2016                                    * 
+c * Data de modificaco : 15/11/2016                                    * 
 c * ------------------------------------------------------------------ *   
 c * PCG_OMP : Solucao de sistemas de equacoes pelo metodo dos          *
 c * gradientes conjugados com precondicionador diagonal para matrizes  *
@@ -97,7 +97,7 @@ c ......................................................................
       real*8  thread_y(*)
       logical flog,fprint,fnew,mpi
 c ...
-      integer*8 flop_cg
+      real*8 flop_cg
       real*8  mflops,vmean
 c .....................................................................
       external matvec,dot, flop_cg
@@ -118,7 +118,8 @@ c$omp.private(i,j,jj,xkx,norm,norm_r,norm_m_r,norm_b)
 c$omp.private(d,di,conv,alpha,beta,tmp)
 c$omp.shared(neq,nad,ia,ja,al,ad,au,b,x,m,z,r,p,tol,maxit,thread_y)
 c$omp.shared(neqf1i,neqf2i,i_fmapi,i_xfi,i_rcvsi,i_dspli,neq_doti)
-c$omp.shared(flog,fprint,fnew,my_id,time,time0,mpi,mflops,vmean,nprcs)
+c$omp.shared(flog,fprint,fnew,my_id,time,time0,mpi,mflops)
+c$omp.shared(vmean,nprcs,ierr)
 c$omp.num_threads(nth_solv)                                          
 c ......................................................................
 c
@@ -262,13 +263,14 @@ c ......................................................................
       time = MPI_Wtime()
       time = time-time0
 c ......................................................................
-c 
-c ...
+c
+c ...    
       if(mpi) then
+        call MPI_barrier(MPI_COMM_WORLD,ierr)
         call mpi_mean(vmean,time,nprcs) 
         time   = vmean        
       endif    
-      mflops = (flop_cg(neq,nad,j,2,mpi)/1000000)/time  
+      mflops = (flop_cg(neq,nad,j,2,mpi)*1.d-06)/time  
 c ......................................................................
 c
 c ...

@@ -1426,7 +1426,7 @@ c **********************************************************************
 c
 c **********************************************************************
 c * Data de criacao    : 23/10/2016                                    *
-c * Data de modificaco : 00/00/0000                                    * 
+c * Data de modificaco : 31/10/2016                                    * 
 c * ------------------------------------------------------------------ *   
 c * FLOP_DOT : calcula o numero de operacoes de pontos flutuantes      *    
 c * do produto interno                                                 *
@@ -1441,17 +1441,17 @@ c * ------------------------------------------------------------------ *
 c * OBS:                                                               *
 c * ------------------------------------------------------------------ * 
 c **********************************************************************
-      integer*8 function flop_dot(n)
+      real*8 function flop_dot(n)
       implicit none
       integer n
-      flop_dot = 2*n
+      flop_dot = 2.d0*n
       return
       end
 c ********************************************************************** 
 c
 c **********************************************************************
 c * Data de criacao    : 23/10/2016                                    *
-c * Data de modificaco : 00/00/0000                                    * 
+c * Data de modificaco : 31/10/2016                                    * 
 c * ------------------------------------------------------------------ *   
 c * FLOP_CSRC: calcula o numero de operacoes de pontos flutuantes      *    
 c * da op matvec CSRC                                                  *
@@ -1467,10 +1467,10 @@ c * ------------------------------------------------------------------ *
 c * OBS:                                                               *
 c * ------------------------------------------------------------------ * 
 c **********************************************************************
-      integer*8 function flop_csrc(nl,nad)
+      real*8 function flop_csrc(nl,nad)
       implicit none
       integer nl,nad
-      flop_csrc = nl + 4*nad
+      flop_csrc = nl + 4.d0*nad
       return
       end
 c **********************************************************************
@@ -1496,27 +1496,27 @@ c * ------------------------------------------------------------------ *
 c * OBS:                                                               *
 c * ------------------------------------------------------------------ * 
 c **********************************************************************
-      integer*8 function flop_cg(neq,nad,it,icod,mpi)
+      real*8 function flop_cg(neq,nad,it,icod,mpi)
       implicit none
       include 'mpif.h'      
       integer neq,nad,it,icod,ierr
-      integer*8 flop_csrc,flop_dot,fmatvec,fdot,flops,gflops
+      real*8 flop_csrc,flop_dot,fmatvec,fdot,flops,gflops
       logical mpi
 c
       fmatvec = flop_csrc(neq,nad)
       fdot    = flop_dot(neq)
 c ... CG
       if(icod .eq. 1) then
-        flops = (fmatvec + 2*fdot + 6*neq + 2)*it     
+        flops = (fmatvec + 2.d0*fdot + 6.d0*neq + 2.d0)*it     
 c ... PCG
       elseif(icod .eq. 2) then
-        flops = (fmatvec + 2*fdot + 7*neq + 2)*it 
+        flops = (fmatvec + 2.d0*fdot + 7.d0*neq + 2.d0)*it 
       endif
 c .....................................................................
 c
 c ...
       if(mpi) then
-        call MPI_ALLREDUCE(flops,gflops,1,MPI_INTEGER8
+        call MPI_ALLREDUCE(flops,gflops,1,MPI_REAL8
      .                    ,MPI_SUM,MPI_COMM_WORLD,ierr)
         flops = gflops
       endif

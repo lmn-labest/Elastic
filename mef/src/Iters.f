@@ -259,7 +259,7 @@ c *********************************************************************
      .              ,fprint,flog   ,fnew,mpi,nprcs)
 c **********************************************************************
 c * Data de criacao    : 00/00/0000                                    *
-c * Data de modificaco : 24/04/2016                                    * 
+c * Data de modificaco : 15/11/2016                                    * 
 c * ------------------------------------------------------------------ *   
 c * Subroutine PCG : Solucao de sistemas de equacoes pelo metodo dos   *
 c * gradientes conjugados com precondicionador diagonal para matrizes  *
@@ -310,7 +310,7 @@ c * ------------------------------------------------------------------ *
 c **********************************************************************
       implicit none
       include 'mpif.h'
-      integer neqf1i,neqf2i,neq_doti,nprcs
+      integer neqf1i,neqf2i,neq_doti,nprcs,ierr
 c ... ponteiros      
       integer*8 i_fmapi,i_xfi
       integer*8 i_rcvsi,i_dspli
@@ -325,7 +325,7 @@ c .....................................................................
       real*8 dum1
       logical flog,fprint,fnew,mpi
 c ...
-      integer*8 flop_cg
+      real*8 flop_cg
       real*8  mflops,vmean
 c .....................................................................
       external matvec,dot, flop_cg
@@ -462,10 +462,11 @@ c ......................................................................
 c 
 c ...    
       if(mpi) then
+        call MPI_barrier(MPI_COMM_WORLD,ierr)
         call mpi_mean(vmean,time,nprcs) 
         time   = vmean        
       endif    
-      mflops = (flop_cg(neq,nad,j,2,mpi)/1000000)/time  
+      mflops = (flop_cg(neq,nad,j,2,mpi)*1.d-06)/time  
 c ......................................................................
 c
 c ...

@@ -735,16 +735,17 @@ c ... forcas internas devidos as tensoes inicias tensoes
       if(fstress0 .and. fcstress0) then
           timei = MPI_Wtime()
           call pform_mec(ia(i_ix)    ,ia(i_eload)  ,ia(i_ie) ,ia(i_e) 
-     .                 ,ia(i_x)     ,ia(i_id)     ,ia(i_ia) ,ia(i_ja)
-     .                 ,ia(i_au)    ,ia(i_al)     ,ia(i_ad) ,ia(i_bst0) 
-     .                 ,ia(i_u )    ,ia(i_tx0)
-     .                 ,ia(i_xl)    ,ia(i_ul)     ,ia(i_pl)
-     .                 ,ia(i_sl)    ,ia(i_ld)     ,ia(i_txnl) 
-     .                 ,numel       ,nen          ,nenv     ,ndf 
-     .                 ,ndm         ,nst          ,neq      ,nad        
-     .                 ,.false.     ,.true.       ,unsym 
-     .                 ,stge        ,5            ,ilib     ,i
-     .                 ,ia(i_colorg),ia(i_elcolor),numcolors,.true.)
+     1                 ,ia(i_x)     ,ia(i_id)     ,ia(i_ia) ,ia(i_ja)
+     2                 ,ia(i_au)    ,ia(i_al)     ,ia(i_ad) ,ia(i_bst0) 
+     3                 ,ia(i_u )    ,ia(i_tx0)
+     4                 ,ia(i_xl)    ,ia(i_ul)     ,ia(i_pl)
+     5                 ,ia(i_sl)    ,ia(i_ld)     ,ia(i_txnl) 
+     6                 ,numel       ,nen          ,nenv     ,ndf 
+     7                 ,ndm         ,nst          
+     8                 ,neq         ,nad          ,nad1
+     9                 ,.false.     ,.true.       ,unsym 
+     1                 ,stge        ,5            ,ilib     ,i
+     2                 ,ia(i_colorg),ia(i_elcolor),numcolors,.true.)
           elmtime = elmtime + MPI_Wtime()-timei
           fcstress0= .false.
       endif 
@@ -753,17 +754,17 @@ c
 c ... forcas de volume e superficie do tempo t+dt :  
       timei = MPI_Wtime()
       call pform_mec(ia(i_ix)    ,ia(i_eload)  ,ia(i_ie) ,ia(i_e) 
-     .              ,ia(i_x)     ,ia(i_id)     ,ia(i_ia) ,ia(i_ja)
-     .              ,ia(i_au)    ,ia(i_al)     ,ia(i_ad) ,ia(i_b0) 
-     .              ,ia(i_u )    ,ia(i_tx0)
-     .              ,ia(i_xl)    ,ia(i_ul)     ,ia(i_pl)
-     .              ,ia(i_sl)    ,ia(i_ld)     ,ia(i_txnl) 
-     .              ,numel       ,nen          ,nenv     ,ndf 
-     .              ,ndm         ,nst          
-     .              ,neq         ,nad           
-     .              ,.false.     ,.true.       ,unsym 
-     .              ,stge,4      ,ilib         ,i
-     .              ,ia(i_colorg),ia(i_elcolor),numcolors,.false.)
+     1              ,ia(i_x)     ,ia(i_id)     ,ia(i_ia) ,ia(i_ja)
+     2              ,ia(i_au)    ,ia(i_al)     ,ia(i_ad) ,ia(i_b0) 
+     3              ,ia(i_u )    ,ia(i_tx0)
+     4              ,ia(i_xl)    ,ia(i_ul)     ,ia(i_pl)
+     5              ,ia(i_sl)    ,ia(i_ld)     ,ia(i_txnl) 
+     6              ,numel       ,nen          ,nenv     ,ndf 
+     7              ,ndm         ,nst          
+     8              ,neq         ,nad          ,nad1
+     9              ,.false.     ,.true.       ,unsym 
+     1              ,stge,4      ,ilib         ,i
+     2              ,ia(i_colorg),ia(i_elcolor),numcolors,.false.)
       elmtime = elmtime + MPI_Wtime()-timei
 c .....................................................................
 c
@@ -788,17 +789,17 @@ c
 c ... Residuo: b = F - K.u(n+1,i)
       timei = MPI_Wtime()
       call pform_mec(ia(i_ix)    ,ia(i_eload)  ,ia(i_ie) ,ia(i_e)
-     .              ,ia(i_x)     ,ia(i_id)     ,ia(i_ia) ,ia(i_ja)
-     .              ,ia(i_au)    ,ia(i_al)     ,ia(i_ad) ,ia(i_b)
-     .              ,ia(i_u)     ,ia(i_tx0)
-     .              ,ia(i_xl)    ,ia(i_ul)     ,ia(i_pl)
-     .              ,ia(i_sl)    ,ia(i_ld)     ,ia(i_txnl)
-     .              ,numel       ,nen          ,nenv     ,ndf
-     .              ,ndm         ,nst          
-     .              ,neq         ,nad        
-     .              ,.true.      ,.true.       ,unsym
-     .              ,stge        ,2            ,ilib     ,i
-     .              ,ia(i_colorg),ia(i_elcolor),numcolors,.false.)
+     1              ,ia(i_x)     ,ia(i_id)     ,ia(i_ia) ,ia(i_ja)
+     2              ,ia(i_au)    ,ia(i_al)     ,ia(i_ad) ,ia(i_b)
+     3              ,ia(i_u)     ,ia(i_tx0)
+     4              ,ia(i_xl)    ,ia(i_ul)     ,ia(i_pl)
+     5              ,ia(i_sl)    ,ia(i_ld)     ,ia(i_txnl)
+     6              ,numel       ,nen          ,nenv     ,ndf
+     7              ,ndm         ,nst          
+     8              ,neq         ,nad          ,nad1
+     9              ,.true.      ,.true.       ,unsym
+     1              ,stge        ,2            ,ilib     ,i
+     2              ,ia(i_colorg),ia(i_elcolor),numcolors,.false.)
       elmtime = elmtime + MPI_Wtime()-timei
 c .....................................................................
 c
@@ -911,7 +912,6 @@ c ...
      .                         ,nen        ,ndm ,ndf        ,ntn
      .                         ,prename    ,istep
      .                         ,bvtk       ,legacy_vtk,print_flag,nplot)
-          close(nplot)  
 c ......................................................................
 c
 c ...
@@ -1209,7 +1209,7 @@ c ... arquivo de tempo
      .                   ,my_id    ,nprcs   ,nout)
 c .....................................................................
 c
-c ... meida do tempo mpio  
+c ... media do tempo mpi 
       if(mpi) then    
         call mpi_log_mean_time(nnovG,nnoG,nelG
      .                        ,omp_elmt ,nth_elmt
